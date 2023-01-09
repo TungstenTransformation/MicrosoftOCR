@@ -1,4 +1,4 @@
-# Integrating Microsoft Computer Vision 4.0 OCR in Kofax Transformation
+# Microsoft Computer Vision 4.0 OCR for Kofax Transformation
 
 Microsoft OCR is built on top of multiple deep learning models.
 * JPEG, GIF, PNG, TIFF 50x50 to 4200x4200 pixels black&white or color.
