@@ -1,3 +1,9 @@
+Option Explicit
+   'On Menu/Edit/References... Add reference to "Microsoft XML, v 6.0"
+   'On Menu/Edit/References... Add reference to "Microsoft VB Regular Expressions 5.5"
+
+' Project Script
+
 Private Sub Document_BeforeClassifyXDoc(ByVal pXDoc As CASCADELib.CscXDocument, ByRef bSkip As Boolean)
    'To trigger Microsoft Azure OCR in Kofax Transformation, just rename the default page OCR profile to be Microsoft OCR"
    Dim PageProfileName As String
@@ -8,22 +14,22 @@ End Sub
 Public Sub MicrosoftOCR_Read(pXDoc As CscXDocument)
    Dim EndPoint As String, Key As String, OCR As String, P As Long
    While pXDoc.Representations.Count>0
+      If pXDoc.Representations(0).Name="Microsoft OCR" Then Exit Sub 'We already have Microsoft OCR text, no need to call again.
       pXDoc.Representations.Remove(0) ' remove all OCR results from XDocument
    Wend
    pXDoc.Representations.Create("Microsoft OCR")
-   EndPoint=Project.ScriptVariables.ItemByName("MicrosoftComputerVisionEndpoint").Value
-   Key=Project.ScriptVariables.ItemByName("MicrosoftComputerVisionKey").Value
+   EndPoint=Project.ScriptVariables.ItemByName("MicrosoftComputerVisionEndpoint").Value 'The Microsoft Azure Cloud URL
+   Key=Project.ScriptVariables.ItemByName("MicrosoftComputerVisionKey").Value   'Key to use Microsoft Cognitive Services
    For P=0 To pXDoc.CDoc.Pages.Count-1
       OCR=MicrosoftOCR_REST(pXDoc.CDoc.Pages(P).SourceFileName,EndPoint,Key)
-      MicrosoftOCR_AddWords(pXDoc, OCR,P)
+      MicrosoftOCR_AddWords(pXDoc, OCR, P)
    Next
 End Sub
 
 Public Function MicrosoftOCR_REST(ImageFileName As String, EndPoint As String, Key As String) As String
-   'On Menu/Edit/References... Add reference to "Microsoft XML, v 6.0"
-   Dim  HTTP As New MSXML2.XMLHTTP60, Body As String, Bytes() As Byte
-   'https://westus.dev.cognitive.microsoft.com/docs/services/computer-vision-v3-2/operations/56f91f2e778daf14a499f20d
    'Call Microsoft Azure Computer Vision OCR API 3.2
+   'https://westus.dev.cognitive.microsoft.com/docs/services/computer-vision-v3-2/operations/56f91f2e778daf14a499f20d
+   Dim  HTTP As New MSXML2.XMLHTTP60, Body As String, Bytes() As Byte
    'supports JPEG, JPG, PNG, TIFF, BMP, 50x50 up to 4200x4200, max 10 megapixel
    Open ImageFileName For Binary Access Read As #1
    ReDim Bytes (0 To LOF(1)-1)
@@ -40,7 +46,6 @@ Public Function MicrosoftOCR_REST(ImageFileName As String, EndPoint As String, K
 End Function
 
 Public Sub MicrosoftOCR_AddWords(pXDoc As CscXDocument, OCR As String, PageOffset As Long)
-   ' On Menu/Edit/References... Add reference to "Microsoft VB Regular Expressions 5.5"
    Dim RegexPages As New RegExp, RegexWords As New RegExp
    Dim Pages As MatchCollection, P As Long, PageIndex As Long
    Dim Words As MatchCollection, W As Long, BoundingBox() As String, Confidence As Double, Word As CscXDocWord
@@ -55,7 +60,7 @@ Public Sub MicrosoftOCR_AddWords(pXDoc As CscXDocument, OCR As String, PageOffse
       For W=0 To Words.Count-1 ' Create a Kofax Transformation word for each OCR word
          Set Word = New CscXDocWord
          Word.Text=JSON_Unescape( Words.Item(W).SubMatches(0))
-         Word.PageIndex=PageIndex
+         Word.PageIndex=PageIndex+PageOffset
          BoundingBox=Split(Words(W).SubMatches(1),",")' returns 8 numbers= 4 coordinates of topleft, topright, bottomright and bottomleft of word in pixels
          'Microsoft OCR returns an irregular 4-edged polygon. Kofax Transformation requires a rectangle
          Word.Left=min(CLng(BoundingBox(0)), CLng(BoundingBox(6)))
