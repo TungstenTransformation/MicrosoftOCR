@@ -35,8 +35,6 @@ Public Function MicrosoftOCR_REST(ImageFileName As String, EndPoint As String, K
    ReDim Bytes (0 To LOF(1)-1)
    Get #1,, Bytes
    Close #1
-   'Body="{'url':'https://learn.microsoft.com/en-us/azure/cognitive-services/computer-vision/images/handwritten-note.jpg'}"
-   'language is optional
    HTTP.Open("POST", EndPoint & "/computervision/imageanalysis:analyze?features=Read&model-version=latest&api-version=2022-10-12-preview",varAsync:=False)
    HTTP.setRequestHeader("Ocp-Apim-Subscription-Key", Key)
    HTTP.setRequestHeader("Content-Type", "application/octet-stream")
