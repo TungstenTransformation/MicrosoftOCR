@@ -27,7 +27,7 @@ Microsoft OCR is built on top of multiple deep learning models.
     * **MicrosoftComputerVisionEndpoint**  
 ![Alt text](images/Script%20Variables.png)
 * Paste in the Key and Endpoint that you copied from Microsoft Azure.
-* Classify a document by pressing F5. (Pressing F4 will perform OCR without calling Microsoft.)
+* Call Microsoft OCR by pressing F5 (Classify). (Pressing F4 will perform OCR without calling Microsoft.)
 
 ## How it works
 In KTM and KTA runtime. Kofax Transformation performs OCR on demand, either when Text Classification is required or when a locator needs text.
