@@ -24,7 +24,7 @@ Microsoft OCR is built on top of multiple deep learning models.
 * Rename the Default Page Recognition profile to **Microsoft OCR**. *It doesn't matter what the OCR engine shown is, it will be ignored*.
 * Add two Script Variables to your project in **Project/Configuration/Script Variables**: 
     * **MicrosoftComputerVisionKey**
-    * **MicrosoftComputerVisionEndpoint**
+    * **MicrosoftComputerVisionEndpoint**  
 ![Alt text](images/Script%20Variables.png)
 * Paste in the Key and Endpoint that you copied from Microsoft Azure.
 * Classify a document by pressing F5. (Pressing F4 will perform OCR without calling Microsoft.)
