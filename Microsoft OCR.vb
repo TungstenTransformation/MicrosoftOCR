@@ -5,10 +5,10 @@ Option Explicit
 ' Project Script
 
 Private Sub Document_BeforeClassifyXDoc(ByVal pXDoc As CASCADELib.CscXDocument, ByRef bSkip As Boolean)
-   'To trigger Microsoft Azure OCR in Kofax Transformation, just rename the default page OCR profile to be Microsoft OCR"
-   Dim PageProfileName As String
-   PageProfileName=Project.RecogProfiles.ItemByID(Project.RecogProfiles.DefaultProfileIdPr).Name
-   If PageProfileName="Microsoft OCR" Then MicrosoftOCR_Read(pXDoc)
+   'To trigger Microsoft Azure OCR in Kofax Transformation, rename the default page OCR profile to "Microsoft OCR"
+   Dim DefaultPageProfileName As String
+   DefaultPageProfileName=Project.RecogProfiles.ItemByID(Project.RecogProfiles.DefaultProfileIdPr).Name
+   If DefaultPageProfileName="Microsoft OCR" Then MicrosoftOCR_Read(pXDoc)
 End Sub
 
 Public Sub MicrosoftOCR_Read(pXDoc As CscXDocument)
@@ -29,16 +29,16 @@ End Sub
 Public Function MicrosoftOCR_REST(ImageFileName As String, EndPoint As String, Key As String) As String
    'Call Microsoft Azure Computer Vision OCR API 3.2
    'https://westus.dev.cognitive.microsoft.com/docs/services/computer-vision-v3-2/operations/56f91f2e778daf14a499f20d
-   Dim  HTTP As New MSXML2.XMLHTTP60, Body As String, Bytes() As Byte
+   Dim  HTTP As New MSXML2.XMLHTTP60, Image() As Byte
    'supports JPEG, JPG, PNG, TIFF, BMP, 50x50 up to 4200x4200, max 10 megapixel
    Open ImageFileName For Binary Access Read As #1
-   ReDim Bytes (0 To LOF(1)-1)
-   Get #1,, Bytes
+   ReDim Image (0 To LOF(1)-1)
+   Get #1,, Image
    Close #1
    HTTP.Open("POST", EndPoint & "/computervision/imageanalysis:analyze?features=Read&model-version=latest&api-version=2022-10-12-preview",varAsync:=False)
    HTTP.setRequestHeader("Ocp-Apim-Subscription-Key", Key)
    HTTP.setRequestHeader("Content-Type", "application/octet-stream")
-   HTTP.send(Bytes)
+   HTTP.send(Image)
    If HTTP.status<>200 Then Err.Raise (654,,"Microsoft OCR Error: (" & HTTP.status & ") " & HTTP.responseText)
    MicrosoftOCR_REST = HTTP.responseText
 End Function
@@ -47,7 +47,7 @@ Public Sub MicrosoftOCR_AddWords(pXDoc As CscXDocument, OCR As String, PageOffse
    Dim RegexPages As New RegExp, RegexWords As New RegExp
    Dim Pages As MatchCollection, P As Long, PageIndex As Long
    Dim Words As MatchCollection, W As Long, BoundingBox() As String, Confidence As Double, Word As CscXDocWord
-   RegexPages.Pattern="""pageNumber"":(\d+),""words"":\[({.*})\],""spans"""   'returns pagenumber and words from JSON
+   RegexPages.Pattern="""pageNumber"":(\d+),""words"":\[({.*?})\],""spans"""   'returns pagenumber and words from JSON
    RegexPages.Global=True ' Find more than one page!
    RegexWords.Pattern="""content"":""(.*?)"",""boundingBox"":\[(.*?)\],""confidence"":(.*?),""span"""  ' returns each word, boundingbox coordinates, confidence from a page
    RegexWords.Global=True ' find more than one word!
