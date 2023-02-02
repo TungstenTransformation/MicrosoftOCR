@@ -1,7 +1,7 @@
 # Microsoft Azure OCR for Kofax Transformation
-##Downloads
+## Downloads
 * [Version 1.0.0](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.0). Initial Release. Full page OCR in cloud or on site.
-
+## Description
 Microsoft OCR is built on top of multiple deep learning models.
 * JPEG, GIF, PNG, TIFF 50x50 to 4200x4200 pixels, black&white or color.
 * Automatic language detection. Supports [122+ languages](https://learn.microsoft.com/en-us/azure/cognitive-services/computer-vision/language-support#optical-character-recognition-ocr).
