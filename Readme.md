@@ -10,6 +10,9 @@ Microsoft OCR is built on top of multiple deep learning models.
 * Free tier: 20 calls/minute, 5k calls/month.
 * S1 Tier 10: calls/second @ ~ 80$/1000 calls. See [Pricing]((https://azure.microsoft.com/en-gb/pricing/details/cognitive-services/computer-vision/)) for more.
 * very simple integration into Kofax Transformation and Kofax Total Agility. No dlls, plugins or any other software required. Works also on KTA cloud.
+![image](https://user-images.githubusercontent.com/47416964/227095491-b54f09f7-7b2f-4be2-95a7-0b5383185ee3.png)
+![image](https://user-images.githubusercontent.com/47416964/227095588-62649b39-4648-4c06-aa37-3f77dcf85600.png)
+
 ## Configure Microsoft Azure
 * Create a free account at [Microsoft Azure](https://azure.microsoft.com).
 * Open [Azure Portal](https://portal.azure.com/#home).
