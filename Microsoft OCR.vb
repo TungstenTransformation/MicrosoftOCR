@@ -61,10 +61,10 @@ Public Sub MicrosoftOCR_AddWords(pXDoc As CscXDocument, OCR As String, PageOffse
          Word.PageIndex=PageIndex+PageOffset
          BoundingBox=Split(Words(W).SubMatches(1),",")' returns 8 numbers= 4 coordinates of topleft, topright, bottomright and bottomleft of word in pixels
          'Microsoft OCR returns an irregular 4-edged polygon. Kofax Transformation requires a rectangle
-         Word.Left=min(CLng(BoundingBox(0)), CLng(BoundingBox(6)))
-         Word.Width=max(CLng(BoundingBox(2)), CLng(BoundingBox(4)))-Word.Left
-         Word.Top=min(CLng(BoundingBox(1)),CLng(BoundingBox(3)))
-         Word.Height=max(CLng(BoundingBox(5)), CLng(BoundingBox(7)))-Word.Top
+         Word.Left=min(CDouble(BoundingBox(0)), CDouble(BoundingBox(6)))
+         Word.Width=max(CDouble(BoundingBox(2)), CDouble(BoundingBox(4)))-Word.Left
+         Word.Top=min(CDouble(BoundingBox(1)),CDouble(BoundingBox(3)))
+         Word.Height=max(CDouble(BoundingBox(5)), CDouble(BoundingBox(7)))-Word.Top
          'Word.Confidence = 1.0' CDbl(Words(W).SubMatches(2))
          pXDoc.Pages(PageIndex+PageOffset).AddWord(Word)
       Next
@@ -77,6 +77,15 @@ Public Function min(a,b)
 End Function
 Public Function max(a,b)
    If a>b Then max=a Else max=b
+End Function
+
+Function CDouble(t As String) As Double
+   'Convert a string to a double amount safely using the default amount formatter, where you control the decimal separator.
+   'CLng and CDbl functions use local regional settings
+   Dim F As New CscXDocField
+   F.Text=t
+   DefaultAmountFormatter.FormatField(F)
+   Return F.DoubleValue
 End Function
 
 Public Function JSON_Unescape(a As String) As String
