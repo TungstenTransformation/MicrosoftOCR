@@ -12,12 +12,14 @@ Private Sub Document_BeforeClassifyXDoc(ByVal pXDoc As CASCADELib.CscXDocument, 
 End Sub
 
 Public Sub MicrosoftOCR_Read(pXDoc As CscXDocument)
-   Dim EndPoint As String, Key As String, OCR As String, P As Long
+   Dim EndPoint As String, Key As String, OCR As String, P As Long, RepName as String
+   RepName="Microsoft OCR"
+   'RepName="PDFTEXT"   'uncomment this line if you want Advanced Zone Locator to use Text
    While pXDoc.Representations.Count>0
-      If pXDoc.Representations(0).Name="Microsoft OCR" Then Exit Sub 'We already have Microsoft OCR text, no need to call again.
+      If pXDoc.Representations(0).Name=RepName Then Exit Sub 'We already have Microsoft OCR text, no need to call again.
       pXDoc.Representations.Remove(0) ' remove all OCR results from XDocument
    Wend
-   pXDoc.Representations.Create("Microsoft OCR")
+   pXDoc.Representations.Create(RepName)
    EndPoint=Project.ScriptVariables.ItemByName("MicrosoftComputerVisionEndpoint").Value 'The Microsoft Azure Cloud URL
    Key=Project.ScriptVariables.ItemByName("MicrosoftComputerVisionKey").Value   'Key to use Microsoft Cognitive Services
    For P=0 To pXDoc.CDoc.Pages.Count-1
