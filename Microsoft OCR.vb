@@ -46,6 +46,8 @@ Public Function MicrosoftOCR_REST(ImageFileName As String, EndPoint As String, K
 End Function
 
 Public Sub MicrosoftOCR_AddWords(pXDoc As CscXDocument, OCR As String, PageOffset As Long)
+   'Microsoft OCR returns results in this format
+   '       {"content":"London","boundingBox":[1577.0,403.0,1643.0,404.0,1641.0,454.0,1575.0,453.0],"confidence":0.988,"span":{"offset":17,"length":4}}
    Dim RegexPages As New RegExp, RegexWords As New RegExp
    Dim Pages As MatchCollection, P As Long, PageIndex As Long
    Dim Words As MatchCollection, W As Long, BoundingBox() As String, Confidence As Double, Word As CscXDocWord
