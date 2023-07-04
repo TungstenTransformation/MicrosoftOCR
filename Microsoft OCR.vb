@@ -67,7 +67,7 @@ Public Sub MicrosoftOCR_AddWords(pXDoc As CscXDocument, OCR As String, PageOffse
          Word.Width=max(CDouble(BoundingBox(2)), CDouble(BoundingBox(4)))-Word.Left
          Word.Top=min(CDouble(BoundingBox(1)),CDouble(BoundingBox(3)))
          Word.Height=max(CDouble(BoundingBox(5)), CDouble(BoundingBox(7)))-Word.Top
-         'Word.Confidence = 1.0' CDbl(Words(W).SubMatches(2))
+         'Word.Confidence = 1.0' CDouble(Words(W).SubMatches(2))
          pXDoc.Pages(PageIndex+PageOffset).AddWord(Word)
       Next
    Next
