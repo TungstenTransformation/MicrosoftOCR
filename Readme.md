@@ -45,6 +45,7 @@ Microsoft OCR is built on top of multiple deep learning models.
 * Make sure you use **PDFText** as the representation name in sub **MicrosoftOCR_Read** in the project level script.
 * Configure the AZL as normal. Make sure for each zone that you check **Use PDF text if available** in the Zone Properties.
   * When you press **Test** in the Zone properties it will always show 100% confidence. The script cannot fix this, but it can fix the confidence in the output of the locator.
+  * Make sure that the AZL zones completely surround the Microsoft OCR text. If they don't completely surround the text then OCR is performed.
 * Add the following [script](AZL_Microsoft%20OCR.vb) to the class level script where you have the Zone Locators.
 * In the select statement, add the names of the Zone Locators where you want the confidences recalculated. Note - the script is not checking the flag **Use PDF text if available**, it is simply changing the confidence of every subfield.
 * Test the AZL, you will probably see confidences in the high 90s for Microsoft OCR.
