@@ -67,7 +67,7 @@ Public Sub MicrosoftOCR_AddWords(pXDoc As CscXDocument, OCR As String, PageOffse
          Word.Width=max(CDouble(BoundingBox(2)), CDouble(BoundingBox(4)))-Word.Left
          Word.Top=min(CDouble(BoundingBox(1)),CDouble(BoundingBox(3)))
          Word.Height=max(CDouble(BoundingBox(5)), CDouble(BoundingBox(7)))-Word.Top
-         'Word.Confidence = 1.0' CDbl(Words(W).SubMatches(2))
+         'Word.Confidence = 1.0' CDouble(Words(W).SubMatches(2))
          pXDoc.Pages(PageIndex+PageOffset).AddWord(Word)
       Next
    Next
@@ -83,10 +83,12 @@ End Function
 
 Function CDouble(t As String) As Double
    'Convert a string to a double amount safely using the default amount formatter, where you control the decimal separator.
-   'CLng and CDbl functions use local regional settings
-   Dim F As New CscXDocField
+   'Make sure your amount formatter your choose has "." as the decimal symbol as Microsoft OCR returns coordinates in this format: "137.0"
+   'CLng and CDbl functions use local regional settings 
+   Dim F As New CscXDocField, AF as ICSCFieldFormatter
    F.Text=t
-   DefaultAmountFormatter.FormatField(F)
+   Set AF=Project.FieldFormatters.ItemByName("DefaultAmountFormatter")
+   AF.FormatField(F)
    Return F.DoubleValue
 End Function
 
