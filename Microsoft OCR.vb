@@ -84,7 +84,7 @@ End Function
 Function CDouble(t As String) As Double
    'Convert a string to a double amount safely using the default amount formatter, where you control the decimal separator.
    'Make sure your amount formatter your choose has "." as the decimal symbol as Microsoft OCR returns coordinates in this format: "137.0"
-   'CLng and CDbl functions use local regional settings
+   'CLng and CDbl functions use local regional settings 
    Dim F As New CscXDocField, AF as ICSCFieldFormatter
    F.Text=t
    Set AF=Project.FieldFormatters.ItemByName("DefaultAmountFormatter")
