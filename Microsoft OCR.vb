@@ -48,7 +48,7 @@ End Function
 Public Sub MicrosoftOCR_AddWords(pXDoc As CscXDocument, OCR As String, PageOffset As Long)
    'Microsoft OCR returns results in this format
    '       {"content":"London","boundingBox":[1577.0,403.0,1643.0,404.0,1641.0,454.0,1575.0,453.0],"confidence":0.988,"span":{"offset":17,"length":4}}
-   Dim RegexPages As New RegExp, RegexWords As New RegExp
+   Dim RegexPages As New RegExp, RegexWords As New RegExp, Confidences As String
    Dim Pages As MatchCollection, P As Long, PageIndex As Long
    Dim Words As MatchCollection, W As Long, BoundingBox() As String, Confidence As Double, Word As CscXDocWord
    RegexPages.Pattern="""pageNumber"":(\d+),""words"":\[({.*?})\],""spans"""   'returns pagenumber and words from JSON
@@ -69,11 +69,18 @@ Public Sub MicrosoftOCR_AddWords(pXDoc As CscXDocument, OCR As String, PageOffse
          Word.Width=max(CDouble(BoundingBox(2)), CDouble(BoundingBox(4)))-Word.Left
          Word.Top=min(CDouble(BoundingBox(1)),CDouble(BoundingBox(3)))
          Word.Height=max(CDouble(BoundingBox(5)), CDouble(BoundingBox(7)))-Word.Top
+         Word.StringTag=Words(W).SubMatches(2)
+         ' We cannot set Word.Confidence directly from script, so we will store confidences in an XValue for the AZL
+         Confidences = Confidences & Words(W).SubMatches(2) & ","
          'Word.Confidence = 1.0' CDouble(Words(W).SubMatches(2))
-         pXDoc.Pages(PageIndex+PageOffset).AddWord(Word)
+         pxdoc.Pages(PageIndex+PageOffset).AddWord(Word)
       Next
    Next
-   pXDoc.Representations(0).AnalyzeLines 'Redo Text Line Analysis in Kofax Transformation
+   Confidences = Left(Confidences,Len(Confidences)-1) ' trim trailing ,
+   'Store all confidences for later use in AZL
+   If pxdoc.XValues.ItemExists("MicrosoftOCR_WordConfidences") Then pxdoc.XValues.Delete("MicrosoftOCR_WordConfidences")
+   pxdoc.XValues.Add("MicrosoftOCR_WordConfidences",Confidences,True)
+   pxdoc.Representations(0).AnalyzeLines 'Redo Text Line Analysis in Kofax Transformation
 End Sub
 
 Public Function min(a,b)
