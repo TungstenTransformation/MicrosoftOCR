@@ -30,6 +30,7 @@ Sub AZL_UseMicrosoftOCRConfidences(ByVal pxdoc As CASCADELib.CscXDocument, ByVal
             WordLength=Len(Words(W).Text)
             .Confidence=.Confidence+ F.DoubleValue* WordLength   'Weight each word confidence by the word length
             .LongTag=.LongTag+WordLength
+            .Text=Words.Text 'Ignore text from AZL zone profile, which get called if page-ocr text is not 100% within the zone.
          Next
          If .LongTag>0 Then .Confidence=.Confidence /.LongTag
       End With
