@@ -1,7 +1,8 @@
 # Microsoft Azure OCR for Kofax Transformation
 ## Downloads
 * [Version 1.0.0](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.0)  (10 Jan 2023). Initial Release. Full page OCR in cloud or on site.
-* [Version 1.0.1](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.1) (4 July 2023). Supports Advanced Zone Locator.   
+* [Version 1.0.1](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.1) (4 July 2023). Supports Advanced Zone Locator.
+* [Version 1.0.2](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.2) (5 July 2023). Allow handwritten words to extend just outside of AZL zones.
 ## Description
 
 Microsoft OCR is built on top of multiple deep learning models.
