@@ -5,7 +5,35 @@
 * [Version 1.0.2](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.2) (5 July 2023). Allow handwritten words to extend just outside of AZL zones.
 ## Description
 
-Microsoft OCR is built on top of multiple deep learning models.
+
+
+Microsoft offers the following services that you can use to read documents.
+* **Document Intelligence 3.0 read model** Form Recognizer**  
+    *optimized for text-heavy scanned and digital documents**. Asynchronous.
+    * supports JPEG/JPG, PNG, BMP, TIFF and **PDF**.
+    * PDF & TIFF <2000 pages & < 50MB. *The free version reads only first 2 pages*.
+    * Text must be at least 12 pixels high. (8pt @ 150dpi)
+    * Has Models **Read**, **Layout**, **General Document**, **Prebuilt** and **Custom**
+    * [Supported](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/language-support?view=doc-intel-3.0.0) handwritten and printed langauges.
+    * **Barcode** Extraction (QR, Code39, Code128, UPC & PDF417).
+    * **Paragraphs**, **Langugage**, **Text Lines** and **Words**.
+    * Supports prebuilt **models**
+      * **read** text. [100+ languages](https://docs.microsoft.com/en-us/azure/applied-ai-services/form-recognizer/language-support).
+      * **layout** paragraphs, tables, text lines, text. [100+ languages](https://docs.microsoft.com/en-us/azure/applied-ai-services/form-recognizer/language-support).
+      * **document** paragraphs, tables, text lines, text, entities, key-value pairs. *English only*.
+      * **businessCard**, **idDocument**, **invoice**, **receipt**, **tax.us.w2**, COVID **vaccinationCard**, **healthInsuranceCard.us**.
+
+  
+  
+* **Azure AI Vision 4.0**  
+    *optimized for general, non-document images like labels, street signs and posters.* Synchronous.
+    * You can use **features:read** to read the visible text
+    * [Version 4.0 Preview](https://learn.microsoft.com/en-us/azure/ai-services/computer-vision/concept-ocr?view=doc-intel-3.0.0). 2023-02-01
+    * [Version 3.2](???). 2022-10-12
+
+
+## Details
+
 * JPEG, GIF, PNG, TIFF 50x50 to 4200x4200 pixels, black&white or color.
 * Automatic language detection. Supports [122+ languages](https://learn.microsoft.com/en-us/azure/cognitive-services/computer-vision/language-support#optical-character-recognition-ocr).
 * Handwritten and printed text.
