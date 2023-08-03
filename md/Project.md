@@ -42,6 +42,6 @@ page recognition profile : Microsoft OCR*
   
 ## Script Variables  
 * **MicrosoftComputerVisionKey** : *****  
-* **MicrosoftComputerVisionEndpoint** : https://davidwright.cognitiveservices.azure.com/  
-* **MicrosoftComputerVisionVersion** : 3.2  
+* **MicrosoftComputerVisionEndpoint** : https://davidwrightkof.cognitiveservices.azure.com/  
+* **MicrosoftFormRecognizerModel** : prebuilt-read  
   
