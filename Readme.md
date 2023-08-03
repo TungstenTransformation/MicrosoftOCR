@@ -13,15 +13,14 @@ Microsoft offers the following services that you can use to read documents.
     * supports JPEG/JPG, PNG, BMP, TIFF and **PDF**.
     * PDF & TIFF <2000 pages & < 50MB. *The free version reads only first 2 pages*.
     * Text must be at least 12 pixels high. (8pt @ 150dpi)
-    * Has Models **Read**, **Layout**, **General Document**, **Prebuilt** and **Custom**
+    * Has prebuilt [Models](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/how-to-guides/use-sdk-rest-api?view=doc-intel-3.0.0&preserve-view=true&tabs=windows&pivots=programming-language-rest-api#analyze-documents-and-get-results)
+      * **prebuilt-read** text. [100+ languages](https://docs.microsoft.com/en-us/azure/applied-ai-services/form-recognizer/language-support).
+      * **prebuilt-layout** paragraphs, tables, text lines, text. [100+ languages](https://docs.microsoft.com/en-us/azure/applied-ai-services/form-recognizer/language-support).
+      * **prebuilt-document** paragraphs, tables, text lines, text, entities, key-value pairs. *English only*.
+      * **prebuilt-businessCard**, **prebuilt-idDocument**, **prebuilt-invoice**, **prebuilt-receipt**, **prebuilt-tax.us.w2**.
     * [Supported](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/language-support?view=doc-intel-3.0.0) handwritten and printed langauges.
     * **Barcode** Extraction (QR, Code39, Code128, UPC & PDF417).
-    * **Paragraphs**, **Langugage**, **Text Lines** and **Words**.
-    * Supports prebuilt **models**
-      * **read** text. [100+ languages](https://docs.microsoft.com/en-us/azure/applied-ai-services/form-recognizer/language-support).
-      * **layout** paragraphs, tables, text lines, text. [100+ languages](https://docs.microsoft.com/en-us/azure/applied-ai-services/form-recognizer/language-support).
-      * **document** paragraphs, tables, text lines, text, entities, key-value pairs. *English only*.
-      * **businessCard**, **idDocument**, **invoice**, **receipt**, **tax.us.w2**, COVID **vaccinationCard**, **healthInsuranceCard.us**.
+    * Previous version was [Document Intelligence v2.1](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/how-to-guides/use-sdk-rest-api?view=doc-intel-2.1.0&preserve-view=true&tabs=windows&pivots=programming-language-rest-api)
 
   
   
@@ -60,8 +59,11 @@ Microsoft offers the following services that you can use to read documents.
 * Rename the Default Page Recognition profile to **Microsoft OCR**. *It doesn't matter what the OCR engine shown is, it will be ignored*.
 * Add two Script Variables to your project in **Project/Configuration/Script Variables**: 
     * **MicrosoftComputerVisionKey**
-    * **MicrosoftComputerVisionEndpoint**  
+    * **MicrosoftComputerVisionEndpoint**
+    * **MicrosoftFormRecognizerModel**    
 ![Alt text](images/Script%20Variables.png)
+
+
 * Microsoft OCR returns coordinates in format "137.0" and confidences in format "0.992". Create an **Amount Formatter** with the following 3 options.
   * Allow 3 decimal places
   * Decimal Symbol = "." (period)
