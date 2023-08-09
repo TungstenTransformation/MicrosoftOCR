@@ -12,12 +12,11 @@ Private Sub Document_BeforeClassifyXDoc(ByVal pXDoc As CASCADELib.CscXDocument, 
    'To trigger Microsoft Azure OCR in Kofax Transformation, rename the default page OCR profile to "Microsoft OCR"
    Dim DefaultPageProfileName As String
    DefaultPageProfileName=Project.RecogProfiles.ItemByID(Project.RecogProfiles.DefaultProfileIdPr).Name
-   DLOG("")
    If DefaultPageProfileName="Microsoft OCR" Then Microsoft_FormRecogniser(pXDoc)
 End Sub
 
 Public Sub Microsoft_FormRecogniser(pXDoc As CscXDocument)
-   Dim EndPoint As String, Key As String, P As Long, RepName As String, L As String, StartTime As Long, Cache As String, JSON As String, Model As String
+   Dim EndPoint As String, Key As String, P As Long, RepName As String, StartTime As Long, Cache As String, JSON As String, Model As String
    RepName="MicrosoftOCR"
    'RepName="PDFTEXT"   'uncomment this line if you want Advanced Zone Locator to use Text
    While pXDoc.Representations.Count>0
@@ -30,17 +29,10 @@ Public Sub Microsoft_FormRecogniser(pXDoc As CscXDocument)
    Cache=Replace(pXDoc.FileName,".xdc", "." & Model & ".json")
    If pXDoc.CDoc.Pages.Count=pXDoc.CDoc.SourceFiles.Count Then 'if the document has only single page files
       For P=0 To pXDoc.CDoc.Pages.Count-1
-         JSON=""
          If Dir(Cache)<>"" Then
-            Open Cache For Input As #1
-            While Not EOF 1
-               Line Input #1, L
-               JSON = JSON & L
-            Wend
-            Close #1
+            JSON=File_Load(Cache)
          Else
             StartTime=Timer
-            DLOG(CStr(StartTime))
             JSON=MicrosoftFormRecogniser_REST(pXDoc.CDoc.Pages(P).SourceFileName,Model,EndPoint,Key,10)
             'Store time in seconds that Microsoft took to read document
             If pXDoc.XValues.ItemExists("MicrosoftOCR_Time") Then pXDoc.XValues.Delete("MicrosoftOCR_Time")
@@ -58,18 +50,6 @@ Public Sub Microsoft_FormRecogniser(pXDoc As CscXDocument)
    End If
 End Sub
 
-Sub DLOG (m As String)
-   If m="" Then
-      Open "c:\temp\out.log" For Output As #1
-      Print #1, vbUTF8BOM
-   Else
-      Open "c:\temp\out.log" For Append As #1
-      Print #1, m
-   End If
-   Close #1
-End Sub
-
-
 Public Function MicrosoftFormRecogniser_REST(ImageFileName As String, Model As String, EndPoint As String, Key As String,Retries As Long) As String
    'Call Microsoft Azure Form Recognizer 3.0
    'https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/how-to-guides/use-sdk-rest-api?view=doc-intel-3.1.0&tabs=windows&pivots=programming-language-rest-api
@@ -83,7 +63,6 @@ Public Function MicrosoftFormRecogniser_REST(ImageFileName As String, Model As S
    Close #1
    'version=2023-07-31, version=2022-08-31
    URL=EndPoint & "formrecognizer/documentModels/" & Model & ":analyze?api-version=2023-07-31&stringIndexType=textElements"
-   DLOG(URL)
    HTTP.Open("POST", URL ,varAsync:=False)
    HTTP.setRequestHeader("Ocp-Apim-Subscription-Key", Key)
    If LCase(Right(ImageFileName,3))="pdf" Then
@@ -96,13 +75,10 @@ Public Function MicrosoftFormRecogniser_REST(ImageFileName As String, Model As S
       Set getRequestStatus = RegexAzureStatus.Execute(HTTP.responseText)
       Err.Raise (654,,"Microsoft OCR Error: (" & HTTP.status & ") " & getRequestStatus(0).SubMatches(0))
    End If
-   DLOG (CStr(HTTP.status))
    OperationLocation=HTTP.getResponseHeader("Operation-Location") 'Get the URL To retrive the result
-   DLOG(OperationLocation)
    Delay=1 'Wait 1 second for result (Microsoft recommends calling no more frequently than 1 second)
    For I= 1 To 100
       Wait Delay
-      DLOG ("Delayed " & CStr(I))
       Set HTTP = New MSXML2.XMLHTTP60
       HTTP.Open("GET", OperationLocation,varAsync:=False)
       HTTP.setRequestHeader("Ocp-Apim-Subscription-Key", Key)
@@ -110,7 +86,6 @@ Public Function MicrosoftFormRecogniser_REST(ImageFileName As String, Model As S
       Set getRequestStatus = RegexAzureStatus.Execute(HTTP.responseText)
       status=getRequestStatus(0).SubMatches(0)
       If HTTP.status<>200 Then Err.Raise (655,,"Microsoft OCR Error: (" & HTTP.status & ") " & HTTP.responseText)
-      DLOG(status)
       Select Case status
       Case "succeeded"
          Exit For
@@ -125,7 +100,7 @@ Public Function MicrosoftFormRecogniser_REST(ImageFileName As String, Model As S
 End Function
 
 Public Sub MicrosoftOCR_AddWords(pXDoc As CscXDocument, JS As Object, PageOffset As Long)
-   Dim pages As Object, P As Long, W As Long, Key As String, Confidences As String, Word As CscXDocWord
+   Dim P As Long, W As Long, Key As String, Confidences As String, Word As CscXDocWord
    For P=0 To JS("js.analyzeResult.pages._count")-1
       For W=0 To JS("js.analyzeResult.pages(" & P & ").words._count")-1   'format
          Key="js.analyzeResult.pages(" & P & ").words(" & W & ")"
@@ -145,6 +120,40 @@ Public Sub MicrosoftOCR_AddWords(pXDoc As CscXDocument, JS As Object, PageOffset
    If pXDoc.XValues.ItemExists("MicrosoftOCR_WordConfidences") Then pXDoc.XValues.Delete("MicrosoftOCR_WordConfidences")
    pXDoc.XValues.Add("MicrosoftOCR_WordConfidences",Confidences,True)
    pXDoc.Representations(0).AnalyzeLines 'Redo Text Line Analysis in Kofax Transformation
+End Sub
+
+Public Sub MicrosoftOCR_AddTables(pXDoc As CscXDocument, JS As Object, PageOffset As Long)
+
+End Sub
+
+Public Sub MicrosoftOCR_AddTable(pXDoc As CscXDocument, JS As Object, Table As CscXDocTable, T As Long)
+   Dim Row As CscXDocTableRow, R As Long, C As Long, CellIndex As Long, Cell As CscXDocTableCell, W As Long, Words As CscXDocWords, P As Long, Key As String, BR As Long, BRKey As String
+   Dim rowCount As Long, columnCount As Long
+   Table.Rows.Clear
+   rowCount =CLng(JS("js.analyzeResult.tables(" & T & ").rowCount"))
+   While Table.Rows.Count<rowCount
+      Table.Rows.Append
+   Wend
+   columnCount = CLng(JS("js.analyzeResult.tables(" & T & ").columnCount"))
+   For CellIndex =0 To rowCount*columnCount-1
+      Key="js.analyzeResult.tables(" & T & ").cells(" & CellIndex & ")"
+      R=CLng(JS(Key & ".rowIndex"))
+      C=CLng(JS(Key & ".columnIndex"))
+      Set Cell=Table.Rows(R).Cells(C)
+      'Cell.Text=JSON_Unescape(JS(Key & ".content"))
+      For BR = 0 To CLng(JS(Key & ".boundingRegions._count"))-1
+         BRKey = Key & ".boundingRegions(" & BR & ")"
+         P =CLng(JS(BRKey & ".pageNumber"))-1
+         Cell.Left=  min(CDouble(JS(BRKey & ".polygon(0)")),CDouble(JS(BRKey & ".polygon(6)")))
+         Cell.Width= max(CDouble(JS(BRKey & ".polygon(2)")),CDouble(JS(BRKey & ".polygon(4)")))-Cell.Left
+         Cell.Top =  min(CDouble(JS(BRKey & ".polygon(1)")),CDouble(JS(BRKey & ".polygon(3)")))
+         Cell.Height=max(CDouble(JS(BRKey & ".polygon(5)")),CDouble(JS(BRKey & ".polygon(7)")))-Cell.Top
+         Set Words = pXDoc.GetWordsInRect(P,Cell.Left,Cell.Top, Cell.Width, Cell.Height)
+         For W=0 To Words.Count-1
+            Cell.AddWordData(Words(W))
+         Next
+      Next
+   Next
 End Sub
 
 Public Sub MicrosoftOCR_AddWords2(pXDoc As CscXDocument, JSON As String, PageOffset As Long)
@@ -195,12 +204,12 @@ Public Function max(a,b)
    If a>b Then max=a Else max=b
 End Function
 
-Function CDouble(t As String) As Double
+Function CDouble(T As String) As Double
    'Convert a string to a double amount safely using the default amount formatter, where you control the decimal separator.
    'Make sure your amount formatter your choose has "." as the decimal symbol as Microsoft OCR returns coordinates in this format: "137.0"
    'CLng and CDbl functions use local regional settings
    Dim F As New CscXDocField, AF As ICscFieldFormatter
-   F.Text=t
+   F.Text=T
    Set AF=Project.FieldFormatters.ItemByName("DefaultAmountFormatter")
    AF.FormatField(F)
    Return F.DoubleValue
@@ -299,4 +308,14 @@ Public Function JSON_Unescape(A As String) As String
    A=Replace(A,"\r","") 'carraige return
    A=Replace(A,"\t","") 'tab
    Return A
+End Function
+
+Public Function File_Load(FileName As String) As String
+   Dim L As String
+   Open FileName For Input As #1
+   While Not EOF 1
+      Line Input #1, L
+      File_Load = File_Load & L
+   Wend
+   Close #1
 End Function

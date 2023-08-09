@@ -28,6 +28,7 @@ Global Column 10000 : PO Item Number
 Global Column 15000 : Tax Amount  
 Global Column 15001 : Discount Amount  
 Global Column 16000 : Match Remark  
+Table Model: TableModel  
 ## Recognition Profiles  
 page recognition profile : OmniPage  
 zonal recognition profile : OP_HandAlphanum*  
