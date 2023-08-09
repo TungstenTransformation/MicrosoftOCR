@@ -7,6 +7,7 @@
 
 
 
+
 Microsoft offers the following services that you can use to read documents.
 * **Document Intelligence 3.0 read model** Form Recognizer**  
     *optimized for text-heavy scanned and digital documents**. Asynchronous.
@@ -87,6 +88,10 @@ In KTM and KTA runtime. Kofax Transformation performs OCR on demand, either when
 This script runs in the event **Document_BeforeClassify**, which occurs before KT ever tries to OCR the document. The script checks if you named a profile "Microsoft OCR". If so, it sends each page of the document to Microsoft and copies the words and coordinates into the XDocument. The XDocument now has an OCR layer called "Microsoft OCR", which will be used by the classifiers and locators - OCR won't be called again with another document.
 In Project Builder or Design Studio, pressing F4 performs OCR with the built-in engines. To force it to use Microsoft OCR, press F5 (Classify) to send the document to Microsoft.
 
+# How to use Microsoft OCR with Tables
+* Add a table locator to any class, configure your table model.
+* Add the following script to the table class. That last parameter 0 is the index of the table to use. Microsoft might find more than 1 table. this example takes the first=0 table.  
+![Microsoft Table in Table Locator](images/TableLocator_MicrosoftDocumentIntelligence.png) 
 ## Limitations and Potential Improvements
 * force it to use a particular language. By default it supports multiple languages per document.
 * not tested on PDF documents.
