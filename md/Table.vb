@@ -4,7 +4,7 @@ Option Explicit
 
 Private Sub Document_AfterLocate(ByVal pXDoc As CASCADELib.CscXDocument, ByVal LocatorName As String)
    Select Case LocatorName
-   Case "ATL"
+   Case "TL"
       ATL_Microsoft(pXDoc,LocatorName)
    End Select
 End Sub

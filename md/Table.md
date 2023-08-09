@@ -6,5 +6,5 @@
 ## Locators
 * **NewLocator** **  
   
-* **ATL** *Tables*  
+* **TL** *Tables*  
   
