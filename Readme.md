@@ -1,5 +1,9 @@
 # Microsoft Azure OCR for Kofax Transformation
-Using Azure Computer Vision OCR 3.2 (Microsoft recommends using 4.0)
+This repository supports different Microsoft OCR engines
+* Document Intelligence 3.0 *optimized for documents*.
+* Document Intelligence 3.1 *coming*
+* [Azure Computer Vision OCR 3.2](https://github.com/KofaxTransformation/MicrosoftOCR/tree/Computer-Vision-OCR-3.2) *optimized for images and not documents*.
+* **Azure AI Vision OCR for Images 4.0** *coming*
 ## Downloads
 * [Version 1.0.0](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.0)  (10 Jan 2023). Initial Release. Full page OCR in cloud or on site.
 * [Version 1.0.1](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.1) (4 July 2023). Supports Advanced Zone Locator.
