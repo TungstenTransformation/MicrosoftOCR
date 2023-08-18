@@ -8,6 +8,7 @@ This repository supports different Microsoft OCR engines
 * [Version 1.0.0](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.0)  (10 Jan 2023). Initial Release. Full page OCR in cloud or on site.
 * [Version 1.0.1](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.1) (4 July 2023). Supports Advanced Zone Locator.
 * [Version 1.0.2](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.2) (5 July 2023). Allow handwritten words to extend just outside of AZL zones.
+* [Version 1.0.3](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.3) (18 Aug 2023). Switched to Microsoft Document Intelligence - no longer Computer Vision OCR. Added Caching of JSON from KTA Classify to KTA Extract.
 ## Description
 
 
