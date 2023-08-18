@@ -23,9 +23,9 @@ Public Sub Microsoft_FormRecogniser(pXDoc As CscXDocument)
       If pXDoc.Representations(0).Name=RepName Then Exit Sub 'We already have Microsoft OCR text, no need to call again.
       pXDoc.Representations.Remove(0) ' remove all OCR results from XDocument
    Wend
-   EndPoint=Project.ScriptVariables.ItemByName("MicrosoftComputerVisionEndpoint").Value 'The Microsoft Azure Cloud URL
-   Key=Project.ScriptVariables.ItemByName("MicrosoftComputerVisionKey").Value   'Key to use Microsoft Cognitive Services
-   Model=Project.ScriptVariables.ItemByName("MicrosoftFormRecognizerModel").Value
+   EndPoint=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceEndpoint").Value 'The Microsoft Azure Cloud URL
+   Key=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceKey").Value   'Key to use Microsoft Cognitive Services
+   Model=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceModel").Value
    Cache=Replace(pXDoc.FileName,".xdc", "." & Model & ".json")
    If pXDoc.CDoc.Pages.Count=pXDoc.CDoc.SourceFiles.Count Then 'if the document has only single page files
       For P=0 To pXDoc.CDoc.Pages.Count-1

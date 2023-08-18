@@ -42,7 +42,8 @@ page recognition profile : Mixed Print
 page recognition profile : Microsoft OCR*  
   
 ## Script Variables  
-* **MicrosoftComputerVisionKey** : *****  
-* **MicrosoftComputerVisionEndpoint** : https://davidwrightkof.cognitiveservices.azure.com/  
-* **MicrosoftFormRecognizerModel** : prebuilt-document  
+* **MicrosoftDocumentIntelligenceKey** : *****  
+* **MicrosoftDocumentIntelligenceEndpoint** : https://davidwright.cognitiveservices.azure.com/  
+* **MicrosoftDocumentIntelligenceVersion** : 3.1  
+* **MicrosoftDocumentIntelligenceModel** : prebuilt-document  
   
