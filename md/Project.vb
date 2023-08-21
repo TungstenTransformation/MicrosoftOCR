@@ -12,12 +12,12 @@ Private Sub Document_BeforeClassifyXDoc(ByVal pXDoc As CASCADELib.CscXDocument, 
    'To trigger Microsoft Azure OCR in Kofax Transformation, rename the default page OCR profile to "Microsoft OCR"
    Dim DefaultPageProfileName As String
    DefaultPageProfileName=Project.RecogProfiles.ItemByID(Project.RecogProfiles.DefaultProfileIdPr).Name
-   If DefaultPageProfileName="Microsoft OCR" Then MicrosoftDI(pXDoc)
+   If DefaultPageProfileName="Microsoft DI" Then MicrosoftDI(pXDoc)
 End Sub
 
 Public Sub MicrosoftDI(pXDoc As CscXDocument)
    Dim EndPoint As String, Key As String, RepName As String, StartTime As Long, Cache As String, JSON As String, Model As String, JS As Object
-   RepName="MicrosoftOCR"
+   RepName="MicrosoftDI"
    'RepName="PDFTEXT"   'uncomment this line if you want Advanced Zone Locator to use Text
    While pXDoc.Representations.Count>0
       If pXDoc.Representations(0).Name=RepName Then Exit Sub 'We already have Microsoft OCR text, no need to call again.
@@ -31,8 +31,8 @@ Public Sub MicrosoftDI(pXDoc As CscXDocument)
       StartTime=Timer
       JSON=MicrosoftDI_REST(pXDoc.CDoc.SourceFiles(0).FileName,Model,EndPoint,Key,10)
       'Store time in seconds that Microsoft took to read document
-      If pXDoc.XValues.ItemExists("MicrosoftOCR_Time") Then pXDoc.XValues.Delete("MicrosoftOCR_Time")
-      pXDoc.XValues.Add("MicrosoftOCR_Time",CStr(Timer-StartTime),True)
+      If pXDoc.XValues.ItemExists("MicrosoftDI_Time") Then pXDoc.XValues.Delete("MicrosoftDI_Time")
+      pXDoc.XValues.Add("MicrosoftDI_Time",CStr(Timer-StartTime),True)
       Cache_Save(pXDoc,"MicrosoftDI_JSON",JSON)
    End If
    Set JS= JSON_Parse(JSON)
@@ -96,10 +96,10 @@ Public Sub MicrosoftDI_AddWords(pXDoc As CscXDocument, JS As Object, PageOffset 
          Set Word = New CscXDocWord
          Word.Text=JSON_Unescape(JS(Key & ".content"))
          Word.PageIndex=P
-         Word.Left=  min(CDouble(JS(Key & ".polygon(0)")),CDouble(JS(Key & ".polygon(6)")))
-         Word.Width= max(CDouble(JS(Key & ".polygon(2)")),CDouble(JS(Key & ".polygon(4)")))-Word.Left
-         Word.Top =  min(CDouble(JS(Key & ".polygon(1)")),CDouble(JS(Key & ".polygon(3)")))
-         Word.Height=max(CDouble(JS(Key & ".polygon(5)")),CDouble(JS(Key & ".polygon(7)")))-Word.Top
+         Word.Left=  Min(CDouble(JS(Key & ".polygon(0)")),CDouble(JS(Key & ".polygon(6)")))
+         Word.Width= Max(CDouble(JS(Key & ".polygon(2)")),CDouble(JS(Key & ".polygon(4)")))-Word.Left
+         Word.Top =  Min(CDouble(JS(Key & ".polygon(1)")),CDouble(JS(Key & ".polygon(3)")))
+         Word.Height=Max(CDouble(JS(Key & ".polygon(5)")),CDouble(JS(Key & ".polygon(7)")))-Word.Top
          Confidences = Confidences & JS(Key & ".confidence") & ","
          pXDoc.Pages(P+PageOffset).AddWord(Word)
       Next
@@ -115,50 +115,52 @@ Public Sub MicrosoftDI_AddTables(pXDoc As CscXDocument, JS As Object, PageOffset
 
 End Sub
 
-Public Sub MicrosoftDI_AddTable(pXDoc As CscXDocument, JS As Object, Table As CscXDocTable, T As Long)
+Public Sub MicrosoftDI_AddTable(pXDoc As CscXDocument, JS As Object, Table As CscXDocTable, t As Long)
    Dim Row As CscXDocTableRow, R As Long, C As Long, CellIndex As Long, Cell As CscXDocTableCell, W As Long, Words As CscXDocWords, P As Long, Key As String, BR As Long, BRKey As String
    Dim rowCount As Long, columnCount As Long
    Table.Rows.Clear
-   rowCount =CLng(JS("js.analyzeResult.tables(" & T & ").rowCount"))
+   rowCount =CLng(JS("js.analyzeResult.tables(" & t & ").rowCount"))
    While Table.Rows.Count<rowCount
       Table.Rows.Append
    Wend
-   columnCount = CLng(JS("js.analyzeResult.tables(" & T & ").columnCount"))
+   columnCount = CLng(JS("js.analyzeResult.tables(" & t & ").columnCount"))
    For CellIndex =0 To rowCount*columnCount-1
-      Key="js.analyzeResult.tables(" & T & ").cells(" & CellIndex & ")"
+      Key="js.analyzeResult.tables(" & t & ").cells(" & CellIndex & ")"
       R=CLng(JS(Key & ".rowIndex"))
       C=CLng(JS(Key & ".columnIndex"))
-      Set Cell=Table.Rows(R).Cells(C)
-      'Cell.Text=JSON_Unescape(JS(Key & ".content"))
-      For BR = 0 To CLng(JS(Key & ".boundingRegions._count"))-1
-         BRKey = Key & ".boundingRegions(" & BR & ")"
-         P =CLng(JS(BRKey & ".pageNumber"))-1
-         Cell.Left=  min(CDouble(JS(BRKey & ".polygon(0)")),CDouble(JS(BRKey & ".polygon(6)")))
-         Cell.Width= max(CDouble(JS(BRKey & ".polygon(2)")),CDouble(JS(BRKey & ".polygon(4)")))-Cell.Left
-         Cell.Top =  min(CDouble(JS(BRKey & ".polygon(1)")),CDouble(JS(BRKey & ".polygon(3)")))
-         Cell.Height=max(CDouble(JS(BRKey & ".polygon(5)")),CDouble(JS(BRKey & ".polygon(7)")))-Cell.Top
-         Set Words = pXDoc.GetWordsInRect(P,Cell.Left,Cell.Top, Cell.Width, Cell.Height)
-         For W=0 To Words.Count-1
-            Cell.AddWordData(Words(W))
+      If C<Table.Columns.Count Then
+         Set Cell=Table.Rows(R).Cells(C)
+         'Cell.Text=JSON_Unescape(JS(Key & ".content"))
+         For BR = 0 To CLng(JS(Key & ".boundingRegions._count"))-1
+            BRKey = Key & ".boundingRegions(" & BR & ")"
+            P =CLng(JS(BRKey & ".pageNumber"))-1
+            Cell.Left=  Min(CDouble(JS(BRKey & ".polygon(0)")),CDouble(JS(BRKey & ".polygon(6)")))
+            Cell.Width= Max(CDouble(JS(BRKey & ".polygon(2)")),CDouble(JS(BRKey & ".polygon(4)")))-Cell.Left
+            Cell.Top =  Min(CDouble(JS(BRKey & ".polygon(1)")),CDouble(JS(BRKey & ".polygon(3)")))
+            Cell.Height=Max(CDouble(JS(BRKey & ".polygon(5)")),CDouble(JS(BRKey & ".polygon(7)")))-Cell.Top
+            Set Words = pXDoc.GetWordsInRect(P,Cell.Left,Cell.Top, Cell.Width, Cell.Height)
+            For W=0 To Words.Count-1
+               Cell.AddWordData(Words(W))
+            Next
          Next
-      Next
+      End If
    Next
 End Sub
 
-Public Function min(A,b)
+Public Function Min(A,b)
    'test
-   If A<b Then min=A Else min=b
+   If A<b Then Min=A Else Min=b
 End Function
-Public Function max(A,b)
-   If A>b Then max=A Else max=b
+Public Function Max(A,b)
+   If A>b Then Max=A Else Max=b
 End Function
 
-Function CDouble(T As String) As Double
+Function CDouble(t As String) As Double
    'Convert a string to a double amount safely using the default amount formatter, where you control the decimal separator.
    'Make sure your amount formatter your choose has "." as the decimal symbol as Microsoft OCR returns coordinates in this format: "137.0"
    'CLng and CDbl functions use local regional settings
    Dim F As New CscXDocField, AF As ICscFieldFormatter
-   F.Text=T
+   F.Text=t
    Set AF=Project.FieldFormatters.ItemByName("DefaultAmountFormatter")
    AF.FormatField(F)
    Return F.DoubleValue
@@ -196,22 +198,22 @@ End Sub
 '-------------------------------------------------------------------
 ' VBA JSON Parser https://github.com/KofaxTransformation/KTScripts/blob/master/JSON%20parser%20in%20vb.md
 '-------------------------------------------------------------------
-Private T As Long, tokens() As String, dic As Object
+Private t As Long, tokens() As String, dic As Object
 Function JSON_Parse(JSON$, Optional Key$ = "js") As Object
-    T = 1
+    t = 1
     tokens = JSON_Tokenize(JSON)
     Set dic = CreateObject("Scripting.Dictionary")
-    If tokens(T) = "{" Then JSON_ParseObj(Key) Else JSON_ParseArr(Key)
+    If tokens(t) = "{" Then JSON_ParseObj(Key) Else JSON_ParseArr(Key)
     Return dic
 End Function
 Function JSON_ParseObj(Key$)
     Do
-      T = T + 1
-     Select Case tokens(T)
+      t = t + 1
+     Select Case tokens(t)
          Case "]"
          Case "[":  JSON_ParseArr(Key)
          Case "{"
-                    If tokens(T + 1) = "}" Then
+                    If tokens(t + 1) = "}" Then
                         T = T + 1
                         dic.Add(Key, "null")
                     Else
@@ -229,15 +231,15 @@ End Function
 Function JSON_ParseArr(Key$)
    Dim A As Long
    Do
-      t = t + 1
-      Select Case tokens(t)
+      T = T + 1
+      Select Case tokens(T)
          Case "}"
          Case "{":  JSON_ParseObj(Key & JSON_ArrayID(A))
          Case "[":  JSON_ParseArr(Key)
          Case "]":  Exit Do
          Case ":":  Key = Key & JSON_ArrayID(A)
          Case ",":  A = A + 1
-         Case Else: dic.Add(Key & JSON_ArrayID(A), tokens(t))
+         Case Else: dic.Add(Key & JSON_ArrayID(A), tokens(T))
       End Select
    Loop
    dic.Add(Key & "._count",A+1) 'store array length in dictionary
