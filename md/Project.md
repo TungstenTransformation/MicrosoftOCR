@@ -39,7 +39,7 @@ zonal recognition profile : OMR_Auto_Single*
 zonal recognition profile : OMR_Auto_Multi  
 zonal recognition profile : OMR_Manual  
 page recognition profile : Mixed Print  
-page recognition profile : Microsoft OCR*  
+page recognition profile : Microsoft DI*  
   
 ## Script Variables  
 * **MicrosoftDocumentIntelligenceKey** : *****  
