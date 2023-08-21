@@ -14,9 +14,9 @@ Sub AZL_UseMicrosoftOCRConfidences(ByVal pxdoc As CASCADELib.CscXDocument, ByVal
    'The zone confidence is calculated using the word lengths as weights.
    Dim S As Long, SubFields As CscXDocSubFields, Confidences() As String, AF As ICscFieldFormatter, F As New CscXDocField
    Dim Words As CscXDocWords, W As Long, WordLength As Long
-   If Not pxdoc.XValues.ItemExists("MicrosoftOCR_WordConfidences") Then Exit Sub ' there are no stored Microsoft OCR word confidences
+   If Not pxdoc.XValues.ItemExists("MicrosoftDI_WordConfidences") Then Exit Sub ' there are no stored Microsoft OCR word confidences
    Set AF = Project.FieldFormatters.ItemByName("DefaultAmountFormatter") ' give the name of an Amount formatter with "." as decimal character to convert "0.992" to double.
-   Confidences =Split(pxdoc.XValues.ItemByName("MicrosoftOCR_WordConfidences").Value,",")
+   Confidences =Split(pxdoc.XValues.ItemByName("MicrosoftDI_WordConfidences").Value,",")
    Set SubFields = pxdoc.Locators.ItemByName(locatorname).Alternatives(0).SubFields
    For S=0 To SubFields.Count-1
       With SubFields(S)
