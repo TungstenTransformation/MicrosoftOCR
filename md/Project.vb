@@ -96,10 +96,7 @@ Public Sub MicrosoftDI_AddWords(pXDoc As CscXDocument, JS As Object, PageOffset 
          Set Word = New CscXDocWord
          Word.Text=JSON_Unescape(JS(Key & ".content"))
          Word.PageIndex=P
-         Word.Left=  Min(CDouble(JS(Key & ".polygon(0)")),CDouble(JS(Key & ".polygon(6)")))
-         Word.Width= Max(CDouble(JS(Key & ".polygon(2)")),CDouble(JS(Key & ".polygon(4)")))-Word.Left
-         Word.Top =  Min(CDouble(JS(Key & ".polygon(1)")),CDouble(JS(Key & ".polygon(3)")))
-         Word.Height=Max(CDouble(JS(Key & ".polygon(5)")),CDouble(JS(Key & ".polygon(7)")))-Word.Top
+         JSON_Polygon2Rectangle(JS,Key,Word)
          Confidences = Confidences & JS(Key & ".confidence") & ","
          pXDoc.Pages(P+PageOffset).AddWord(Word)
       Next
@@ -134,10 +131,7 @@ Public Sub MicrosoftDI_AddTable(pXDoc As CscXDocument, JS As Object, Table As Cs
          For BR = 0 To CLng(JS(Key & ".boundingRegions._count"))-1
             BRKey = Key & ".boundingRegions(" & BR & ")"
             P =CLng(JS(BRKey & ".pageNumber"))-1
-            Cell.Left=  Min(CDouble(JS(BRKey & ".polygon(0)")),CDouble(JS(BRKey & ".polygon(6)")))
-            Cell.Width= Max(CDouble(JS(BRKey & ".polygon(2)")),CDouble(JS(BRKey & ".polygon(4)")))-Cell.Left
-            Cell.Top =  Min(CDouble(JS(BRKey & ".polygon(1)")),CDouble(JS(BRKey & ".polygon(3)")))
-            Cell.Height=Max(CDouble(JS(BRKey & ".polygon(5)")),CDouble(JS(BRKey & ".polygon(7)")))-Cell.Top
+            JSON_Polygon2Rectangle(JS,Key,Cell)
             Set Words = pXDoc.GetWordsInRect(P,Cell.Left,Cell.Top, Cell.Width, Cell.Height)
             For W=0 To Words.Count-1
                Cell.AddWordData(Words(W))
@@ -289,6 +283,15 @@ Public Function JSON_Unescape(A As String) As String
    A=Replace(A,"\t","") 'tab
    Return A
 End Function
+
+Public Sub JSON_Polygon2Rectangle(JS As Object, Key As String, Rectangle As Object)
+   'Microsoft returns the coordinates of a region as JSON ->   "polygon": [1848,492,1896,494,1897,535,1849,535]
+   'We need to convert this to  .left, .width, .top and .height
+   Rectangle.Left=  Min(CDouble(JS(Key & ".polygon(0)")),CDouble(JS(Key & ".polygon(6)")))
+   Rectangle.Width= Max(CDouble(JS(Key & ".polygon(2)")),CDouble(JS(Key & ".polygon(4)")))-Rectangle.Left
+   Rectangle.Top =  Min(CDouble(JS(Key & ".polygon(1)")),CDouble(JS(Key & ".polygon(3)")))
+   Rectangle.Height=Max(CDouble(JS(Key & ".polygon(5)")),CDouble(JS(Key & ".polygon(7)")))-Rectangle.Top
+End Sub
 
 Public Function File_Load(FileName As String) As String
    Dim L As String
