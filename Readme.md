@@ -10,7 +10,7 @@ This repository supports different Microsoft OCR engines
 * [Version 1.0.2](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.2) (5 July 2023). Allow handwritten words to extend just outside of AZL zones.
 * [Version 1.0.3](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.3) (18 Aug 2023). Switched to Microsoft Document Intelligence - no longer Computer Vision OCR. Added Caching of JSON from KTA Classify to KTA Extract.
 * [Version 1.0.4](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.4) (21 Aug 2023). Supports KeyValue Pairs. Fixed table bugs..
-* [Version 1.0.5](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.5) (29 Aug 2023). Fixed error reading model name. Write Microsft processing time in milliseconds to first word in XDoc Rep called "MicrosoftDI_ProcessingTime".
+* [Version 1.0.5](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.5) (29 Aug 2023). [Fixed](https://github.com/KofaxTransformation/MicrosoftOCR/commit/62a36fca545373683e7cd807bb3532779e0661e7) error reading model name. Write Microsoft [processing time](https://github.com/KofaxTransformation/MicrosoftOCR/commit/2a1d43c79cd34010817dcc8f64003387a3cb7391) in milliseconds to first word in XDoc Rep called "MicrosoftDI_ProcessingTime".
 ## Description
 Microsoft offers the following services that you can use to read documents.
 * **Document Intelligence 3.0 read model** Form Recognizer**  
