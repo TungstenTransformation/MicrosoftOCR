@@ -17,6 +17,7 @@ End Sub
 
 Public Sub MicrosoftDI(pXDoc As CscXDocument)
    Dim EndPoint As String, Key As String, RepName As String, StartTime As Long, Cache As String, JSON As String, Model As String, JS As Object
+   Dim TimeStart As Double, TimeEnd As Double, ElapsedTime As Double
    RepName="MicrosoftDI"
    'RepName="PDFTEXT"   'uncomment this line if you want Advanced Zone Locator to use Text
    While pXDoc.Representations.Count>0
@@ -26,10 +27,18 @@ Public Sub MicrosoftDI(pXDoc As CscXDocument)
    pXDoc.Representations.Create(RepName)
    EndPoint=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceEndpoint").Value 'The Microsoft Azure Cloud URL
    Key=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceKey").Value   'Key to use Microsoft Cognitive Services
+   Model=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceModel").Value
    JSON=Cache_Load(pXDoc,"MicrosoftDI_JSON")
    If JSON="" Then
       StartTime=Timer
       JSON=MicrosoftDI_REST(pXDoc.CDoc.SourceFiles(0).FileName,Model,EndPoint,Key,10)
+      TimeEnd=Timer
+      If TimeEnd<TimeStart Then
+         ElapsedTime = CLng(1000 * (86400 - TimeStart + TimeEnd)) ' 86400=24*60^2 = seconds/day. needed if the job started before midnight and finished after midnight
+      Else
+         ElapsedTime = CLng(1000 * (TimeEnd - TimeStart))  ' this is in milliseconds (accuracy of 1/18th of a second)
+      End If
+      Cache_Save(pXDoc,"MicrosoftDI_ProcessingTime",Format(ElapsedTime,"0.00")) 'Write the elapsed time into the first word of a custom Rep. This prevents KTA deleting it. Can be viewed in XDoc Browser or Repository Browser.
       'Store time in seconds that Microsoft took to read document
       If pXDoc.XValues.ItemExists("MicrosoftDI_Time") Then pXDoc.XValues.Delete("MicrosoftDI_Time")
       pXDoc.XValues.Add("MicrosoftDI_Time",CStr(Timer-StartTime),True)
@@ -37,6 +46,7 @@ Public Sub MicrosoftDI(pXDoc As CscXDocument)
    End If
    Set JS= JSON_Parse(JSON)
    MicrosoftDI_AddWords(pXDoc, JS, 0)
+
 End Sub
 
 Public Function MicrosoftDI_REST(ImageFileName As String, Model As String, EndPoint As String, Key As String,Retries As Long) As String
@@ -84,7 +94,6 @@ Public Function MicrosoftDI_REST(ImageFileName As String, Model As String, EndPo
          Delay=Delay+1 ' wait 1 second longer next time
       End Select
    Next
-
    Return HTTP.responseText
 End Function
 
