@@ -26,6 +26,7 @@ Public Sub MicrosoftDI(pXDoc As CscXDocument)
    pXDoc.Representations.Create(RepName)
    EndPoint=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceEndpoint").Value 'The Microsoft Azure Cloud URL
    Key=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceKey").Value   'Key to use Microsoft Cognitive Services
+   Model=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceModel").Value
    JSON=Cache_Load(pXDoc,"MicrosoftDI_JSON")
    If JSON="" Then
       StartTime=Timer
