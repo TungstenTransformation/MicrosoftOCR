@@ -1,11 +1,20 @@
-# Microsoft Azure OCR for Kofax Transformation
-This repository supports different Microsoft OCR engines
-* Document Intelligence 3.0 *optimized for documents*.
-* Document Intelligence 3.1 *coming*
-* [Azure Computer Vision OCR 3.2](https://github.com/KofaxTransformation/MicrosoftOCR/tree/Computer-Vision-OCR-3.2) *optimized for images and not documents*.
-* **Azure AI Vision OCR for Images 4.0** *coming*
+# Microsoft Azure AI Vision and Document Intelligence for Kofax Transformation.
+
+
+Microsoft provides the following AI engines on Azure cloud and on-prem, that can be used in Kofax Transformation.
+* **Azure Document Intelligence** 
+  * *optimized for documents*.
+  * Version 3.0 *OCR, handwriting, zones, tables, key-value pairs, document libraries.*
+  * Version 3.1 *coming.*
+* **Azure Computer Vision OCR** 
+  * optimized for images and not documents*.
+  * Version [3.2](https://github.com/KofaxTransformation/MicrosoftOCR/tree/Computer-Vision-OCR-3.2).
+  * Version 4.0 *coming*.
+
+It is very simple to integrate into Kofax Transformation and Kofax Total Agility. No dlls, plugins or any other software required. Works also on KTA cloud.
+
 ## Downloads
-* [Version 1.0.0](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.0)  (10 Jan 2023). Initial Release. Full page OCR in cloud or on site.
+* [Version 1.0.0](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.0)  (10 Jan 2023). Initial Release Vision OCR 3.2. Full page OCR in cloud or on site.
 * [Version 1.0.1](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.1) (4 July 2023). Supports Advanced Zone Locator.
 * [Version 1.0.2](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.2) (5 July 2023). Allow handwritten words to extend just outside of AZL zones.
 * [Version 1.0.3](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.3) (18 Aug 2023). Switched to Microsoft Document Intelligence - no longer Computer Vision OCR. Added Caching of JSON from KTA Classify to KTA Extract.
@@ -13,8 +22,8 @@ This repository supports different Microsoft OCR engines
 * [Version 1.0.5](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.5) (29 Aug 2023). [Fixed](https://github.com/KofaxTransformation/MicrosoftOCR/commit/62a36fca545373683e7cd807bb3532779e0661e7) error reading model name. Write Microsoft [processing time](https://github.com/KofaxTransformation/MicrosoftOCR/commit/2a1d43c79cd34010817dcc8f64003387a3cb7391) in milliseconds to first word in XDoc Rep called "MicrosoftDI_ProcessingTime".
 ## Description
 Microsoft offers the following services that you can use to read documents.
-* **Document Intelligence 3.0 read model** Form Recognizer**  
-    *optimized for text-heavy scanned and digital documents**. Asynchronous.
+* **Document Intelligence 3.0 read model Form Recognizer**  
+    *optimized for text-heavy scanned and digital documents*. Asynchronous.
     * supports JPEG/JPG, PNG, BMP, TIFF and **PDF**.
     * PDF & TIFF <2000 pages & < 50MB. *The free version reads only first 2 pages*.
     * Text must be at least 12 pixels high. (8pt @ 150dpi)
@@ -35,16 +44,12 @@ Microsoft offers the following services that you can use to read documents.
     * [Version 4.0 Preview](https://learn.microsoft.com/en-us/azure/ai-services/computer-vision/concept-ocr?view=doc-intel-3.0.0). 2023-02-01
     * [Version 3.2](???). 2022-10-12
 
-
-## Details
-
-* JPEG, GIF, PNG, TIFF 50x50 to 4200x4200 pixels, black&white or color.
-* Automatic language detection. Supports [122+ languages](https://learn.microsoft.com/en-us/azure/cognitive-services/computer-vision/language-support#optical-character-recognition-ocr).
-* Handwritten and printed text.
-* On Azure Cloud or [on-premise](https://learn.microsoft.com/en-us/azure/cognitive-services/computer-vision/computer-vision-how-to-install-containers) via Docker Containers.
-* Free tier: 20 calls/minute, 5k calls/month.
-* S1 Tier 10: calls/second @ ~ 80$/1000 calls. See [Pricing]((https://azure.microsoft.com/en-gb/pricing/details/cognitive-services/computer-vision/)) for more.
-* very simple integration into Kofax Transformation and Kofax Total Agility. No dlls, plugins or any other software required. Works also on KTA cloud.
+    * JPEG, GIF, PNG, TIFF 50x50 to 4200x4200 pixels, black&white or color.
+    * Automatic language detection. Supports [122+ languages](https://learn.microsoft.com/en-us/azure/cognitive-services/computer-vision/language-support#optical-character-recognition-ocr).
+    * Handwritten and printed text.
+    * On Azure Cloud or [on-premise](https://learn.microsoft.com/en-us/azure/cognitive-services/computer-vision/computer-vision-how-to-install-containers) via Docker Containers.
+    * Free tier: 20 calls/minute, 5k calls/month.
+    * S1 Tier 10: calls/second @ ~ 80$/1000 calls. See [Pricing]((https://azure.microsoft.com/en-gb/pricing/details/cognitive-services/computer-vision/)) for more.
 ![image](https://user-images.githubusercontent.com/47416964/227095491-b54f09f7-7b2f-4be2-95a7-0b5383185ee3.png)
 ![image](https://user-images.githubusercontent.com/47416964/227095588-62649b39-4648-4c06-aa37-3f77dcf85600.png)
 
