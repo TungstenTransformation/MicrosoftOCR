@@ -39,7 +39,6 @@ Public Sub MicrosoftDI(pXDoc As CscXDocument)
          ElapsedTime = CLng(1000 * (TimeEnd - TimeStart))  ' this is in milliseconds (accuracy of 1/18th of a second)
       End If
       pXDoc.TimeOCR=ElapsedTime
-      'Store time in seconds that Microsoft took to read document
       Cache_Save(pXDoc,"MicrosoftDI_JSON",JSON)
    End If
    Set JS= JSON_Parse(JSON)
