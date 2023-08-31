@@ -38,10 +38,8 @@ Public Sub MicrosoftDI(pXDoc As CscXDocument)
       Else
          ElapsedTime = CLng(1000 * (TimeEnd - TimeStart))  ' this is in milliseconds (accuracy of 1/18th of a second)
       End If
-      Cache_Save(pXDoc,"MicrosoftDI_ProcessingTime",Format(ElapsedTime,"0.00")) 'Write the elapsed time into the first word of a custom Rep. This prevents KTA deleting it. Can be viewed in XDoc Browser or Repository Browser.
+      pXDoc.TimeOCR=ElapsedTime
       'Store time in seconds that Microsoft took to read document
-      If pXDoc.XValues.ItemExists("MicrosoftDI_Time") Then pXDoc.XValues.Delete("MicrosoftDI_Time")
-      pXDoc.XValues.Add("MicrosoftDI_Time",CStr(Timer-StartTime),True)
       Cache_Save(pXDoc,"MicrosoftDI_JSON",JSON)
    End If
    Set JS= JSON_Parse(JSON)
