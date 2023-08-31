@@ -60,48 +60,47 @@ Microsoft offers the following services that you can use to read documents.
 
 ## Configure Kofax Transformation
 
-* Copy the [script](Microsoft%20OCR.vb) into the Project Level Class of your KT Project.
-* Rename the Default Page Recognition profile to **Microsoft OCR**. *It doesn't matter what the OCR engine shown is, it will be ignored*.
-* Add two Script Variables to your project in **Project/Configuration/Script Variables**: 
-    * **MicrosoftComputerVisionKey**
-    * **MicrosoftComputerVisionEndpoint**
-    * **MicrosoftFormRecognizerModel**    
-![Alt text](images/Script%20Variables.png)
+* Create/load your project in Project Builder or Transformation Designer.
+* Copy the project level [script](md/Project.vb) into the Project Level Class of your KT Project.
+* Rename the Default Page Recognition profile to **Microsoft DI**. *It doesn't matter what the OCR engine shown is, it will be ignored*.
+* Add Script Variables to your project in **Project/Configuration/Script Variables**: 
+    * **MicrosoftDocumentIntelligenceKey**
+    * **MicrosoftDocumentIntelligenceEndpoint**
+    * **MicrosoftDocumentIntelligenceVersion**
+    * **MicrosoftDocumentIntelligenceModel** 
+ ![Alt text](images/Script%20Variables.png)
+* Paste in the Key and Endpoint that you copied from Microsoft Azure into the Script Variables.
+* Select a [model](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/how-to-guides/use-sdk-rest-api?view=doc-intel-3.0.0&preserve-view=true&tabs=windows&pivots=programming-language-rest-api#analyze-documents-and-get-results) for Microsoft to use for extraction. 
 
-
-* Microsoft OCR returns coordinates in format "137.0" and confidences in format "0.992". Create an **Amount Formatter** with the following 3 options.
+* Microsoft Document Intelligence returns coordinates in format "137.0" and confidences in format "0.992". Create an **Amount Formatter** with the following 3 options.
   * Allow 3 decimal places
   * Decimal Symbol = "." (period)
   * No of decimal places (3)
 * Change the name of the Amount Formatter in the function **CDouble()** to your Amount Formatter.
-* Paste in the Key and Endpoint that you copied from Microsoft Azure.
+
 * Call Microsoft OCR by pressing F5 (Classify). (Pressing F4 will perform OCR without calling Microsoft.)
 
-## How to use Microsoft OCR with Advanced Zone Locator
+## How to use Microsoft Document Intelligence with Advanced Zone Locator
 * Make sure you use **PDFText** as the representation name in sub **MicrosoftOCR_Read** in the project level script.
 * Configure the AZL as normal. Make sure for each zone that you check **Use PDF text if available** in the Zone Properties.
   * When you press **Test** in the Zone properties it will always show 100% confidence. The script cannot fix this, but it can fix the confidence in the output of the locator.
   * Make sure that the AZL zones completely surround the Microsoft OCR text. If they don't completely surround the text then OCR is performed.
-* Add the following [script](AZL_Microsoft%20OCR.vb) to the class level script where you have the Zone Locators.
+* Add the [script](md/AZL.vb) to the class level script where you have the Zone Locators.
 * In the select statement, add the names of the Zone Locators where you want the confidences recalculated. Note - the script is not checking the flag **Use PDF text if available**, it is simply changing the confidence of every subfield.
 * Test the AZL, you will probably see confidences in the high 90s for Microsoft OCR.
 
 
 ## How it works
-In KTM and KTA runtime. Kofax Transformation performs OCR on demand, either when Text Classification is required or when a locator needs text.
-This script runs in the event **Document_BeforeClassify**, which occurs before KT ever tries to OCR the document. The script checks if you named a profile "Microsoft OCR". If so, it sends each page of the document to Microsoft and copies the words and coordinates into the XDocument. The XDocument now has an OCR layer called "Microsoft OCR", which will be used by the classifiers and locators - OCR won't be called again with another document.
+In KTM and KTA runtime, Kofax Transformation performs OCR on demand, either when Text Classification is required or when a locator needs text.
+This script runs in the event **Document_BeforeClassify**, which occurs before KT ever tries to OCR the document. The script checks if you named a profile "Microsoft DI". If so, it sends the document to Microsoft and copies the words and coordinates into the XDocument. The XDocument now has an OCR layer called "Microsoft DI", which will be used by the classifiers and locators - OCR won't be called again with another document.
 In Project Builder or Design Studio, pressing F4 performs OCR with the built-in engines. To force it to use Microsoft OCR, press F5 (Classify) to send the document to Microsoft.
 
-# How to use Microsoft OCR with Tables
+# How to use Microsoft DI with Tables
 * Add a table locator to any class, configure your table model.
-* Add the following script to the table class. That last parameter 0 is the index of the table to use. Microsoft might find more than 1 table. this example takes the first=0 table.  
+* Add the [script](md/Table.vb) to the table class. That last parameter 0 is the index of the table to use. Microsoft might find more than 1 table. this example takes the first=0 table.  
 ![Microsoft Table in Table Locator](images/TableLocator_MicrosoftDocumentIntelligence.png) 
 ## Limitations and Potential Improvements
-* force it to use a particular language. By default it supports multiple languages per document.
-* not tested on PDF documents.
-* not tested on multipage TIFF, but should work.
 * will generate an error when you reach your license limit.  
-* ignores word-level confidences.
 * Ignores regions, which could be copied into KT paragraphs.
 
 Open an [issue](https://github.com/KofaxTransformation/MicrosoftOCR/issues) if you find a bug or need a feature implemented.
