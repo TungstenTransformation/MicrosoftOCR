@@ -98,14 +98,19 @@ Public Function MicrosoftDI_REST(ImageFileName As String, Model As String, EndPo
 End Function
 
 Public Sub MicrosoftDI_AddWords(pXDoc As CscXDocument, JS As Object, PageOffset As Long)
-   Dim P As Long, W As Long, Key As String, Confidences As String, Word As CscXDocWord
+   Dim P As Long, W As Long, Key As String, Confidences As String, Word As CscXDocWord, Units As String, XRes As Double, YRes As Double
    For P=0 To JS("js.analyzeResult.pages._count")-1
+      Units=JS("JS.analyzeResult.Pages(" & CStr(P) & ").unit")
+      If Units="inch" Then
+         XRes=pXDoc.CDoc.Pages(P).XRes
+         YRes=pXDoc.CDoc.Pages(P).XRes
+      End If
       For W=0 To JS("js.analyzeResult.pages(" & P & ").words._count")-1   'format
          Key="js.analyzeResult.pages(" & P & ").words(" & W & ")"
          Set Word = New CscXDocWord
          Word.Text=JSON_Unescape(JS(Key & ".content"))
          Word.PageIndex=P
-         JSON_Polygon2Rectangle(JS,Key,Word)
+         JSON_Polygon2Rectangle(JS,Key,Word,Units,XRes,YRes)
          Confidences = Confidences & JS(Key & ".confidence") & ","
          pXDoc.Pages(P+PageOffset).AddWord(Word)
       Next
@@ -123,7 +128,7 @@ End Sub
 
 Public Sub MicrosoftDI_AddTable(pXDoc As CscXDocument, JS As Object, Table As CscXDocTable, t As Long)
    Dim Row As CscXDocTableRow, R As Long, C As Long, CellIndex As Long, Cell As CscXDocTableCell, W As Long, Words As CscXDocWords, P As Long, Key As String, BR As Long, BRKey As String
-   Dim rowCount As Long, columnCount As Long
+   Dim rowCount As Long, columnCount As Long, Units As String, XRes As Double, YRes As Double
    Table.Rows.Clear
    rowCount =CLng(JS("js.analyzeResult.tables(" & t & ").rowCount"))
    While Table.Rows.Count<rowCount
@@ -140,7 +145,12 @@ Public Sub MicrosoftDI_AddTable(pXDoc As CscXDocument, JS As Object, Table As Cs
          For BR = 0 To CLng(JS(Key & ".boundingRegions._count"))-1
             BRKey = Key & ".boundingRegions(" & BR & ")"
             P =CLng(JS(BRKey & ".pageNumber"))-1
-            JSON_Polygon2Rectangle(JS,Key,Cell)
+            Units=JS("JS.analyzeResult.Pages(" & CStr(P+1) & ").unit")
+            If Units="inch" Then
+               XRes=pXDoc.CDoc.Pages(P).XRes
+               YRes=pXDoc.CDoc.Pages(P).XRes
+            End If
+            JSON_Polygon2Rectangle(JS,Key,Cell, Units, XRes, YRes)
             Set Words = pXDoc.GetWordsInRect(P,Cell.Left,Cell.Top, Cell.Width, Cell.Height)
             For W=0 To Words.Count-1
                Cell.AddWordData(Words(W))
@@ -293,13 +303,19 @@ Public Function JSON_Unescape(A As String) As String
    Return A
 End Function
 
-Public Sub JSON_Polygon2Rectangle(JS As Object, Key As String, Rectangle As Object)
+Public Sub JSON_Polygon2Rectangle(JS As Object, Key As String, Rectangle As Object, Units As String, XRes As Long, YRes As Long)
    'Microsoft returns the coordinates of a region as JSON ->   "polygon": [1848,492,1896,494,1897,535,1849,535]
    'We need to convert this to  .left, .width, .top and .height
    Rectangle.Left=  Min(CDouble(JS(Key & ".polygon(0)")),CDouble(JS(Key & ".polygon(6)")))
    Rectangle.Width= Max(CDouble(JS(Key & ".polygon(2)")),CDouble(JS(Key & ".polygon(4)")))-Rectangle.Left
    Rectangle.Top =  Min(CDouble(JS(Key & ".polygon(1)")),CDouble(JS(Key & ".polygon(3)")))
    Rectangle.Height=Max(CDouble(JS(Key & ".polygon(5)")),CDouble(JS(Key & ".polygon(7)")))-Rectangle.Top
+   If Units="inch" Then
+      Rectangle.Left=Rectangle.Left*XRes
+      Rectangle.Width=Rectangle.Width*XRes
+      Rectangle.Top=Rectangle.Top*YRes
+      Rectangle.Height=Rectangle.Height*YRes
+   End If
 End Sub
 
 Public Function File_Load(FileName As String) As String
