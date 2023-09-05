@@ -20,7 +20,7 @@ Private Sub SL_KeyValues_LocateAlternatives(ByVal pXDoc As CASCADELib.CscXDocume
          Object_AddWords(pXDoc,Key,Key)
          Key.Confidence=.Confidence
          KVKey="js.analyzeResult.keyValuePairs(" & K & ").value.boundingRegions(0)"
-         Set Value = .SubFields.Create("Key")
+         Set Value = .SubFields.Create("Value")
          Value.PageIndex=CLng(JS(KVKey & ".pageNumber")-1)
          If Value.PageIndex>-1 Then ' Microsoft can return keys without values !!!
             JSON_Polygon2Rectangle(JS,KVKey,Value)
