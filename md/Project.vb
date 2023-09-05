@@ -54,7 +54,7 @@ Public Function MicrosoftDI_REST(ImageFileName As String, Model As String, EndPo
    'Call Microsoft Azure Form Recognizer 3.0
    'https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/how-to-guides/use-sdk-rest-api?view=doc-intel-3.1.0&tabs=windows&pivots=programming-language-rest-api
    'model = prebuilt-document
-   Dim HTTP As New MSXML2.XMLHTTP60, Image() As Byte, I As Long, Delay As Long, RegexAzureStatus As New RegExp, getRequestStatus As MatchCollection, OperationLocation As String, status As String, URL As String
+   Dim HTTP As New MSXML2.XMLHTTP60, Image() As Byte, I As Long, Delay As Long, RegexAzureStatus As New RegExp, getRequestStatus As MatchCollection, OperationLocation As String, status As String, URL As String, Extension As String
    RegexAzureStatus.Pattern = """status"":""(.*?)"""
    'supports PDF, JPEG, JPG, PNG, TIFF, BMP, 50x50 up to 4200x4200, max 10 megapixel
    Open ImageFileName For Binary Access Read As #1
@@ -65,11 +65,15 @@ Public Function MicrosoftDI_REST(ImageFileName As String, Model As String, EndPo
    URL=EndPoint & "formrecognizer/documentModels/" & Model & ":analyze?api-version=2023-07-31&stringIndexType=textElements"
    HTTP.Open("POST", URL ,varAsync:=False)
    HTTP.setRequestHeader("Ocp-Apim-Subscription-Key", Key)
-   If LCase(Right(ImageFileName,3))="pdf" Then
-         HTTP.setRequestHeader("Content-Type", "application/pdf")
-      Else
+   Extension =LCase(Right(ImageFileName,InStrRev(ImageFileName,".")+1))
+   If Extension="jpg" Then Extension = "jpeg"
+   If Extension="tif" Then Extension = "tiff"
+   Select Case Extension
+   Case "png", "jpeg", "pdf", "tiff", "bmp"
+         HTTP.setRequestHeader("Content-Type", "application/" & Extension)
+   Case Else
          HTTP.setRequestHeader("Content-Type", "application/octet-stream")
-   End If
+   End Select
    HTTP.send(Image)
    If HTTP.status<>202 Then
       Set getRequestStatus = RegexAzureStatus.Execute(HTTP.responseText)
