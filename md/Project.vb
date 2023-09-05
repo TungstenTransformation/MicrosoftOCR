@@ -9,7 +9,7 @@ Option Explicit
 '#Language "WWB-COM"
 
 Private Sub Document_BeforeClassifyXDoc(ByVal pXDoc As CASCADELib.CscXDocument, ByRef bSkip As Boolean)
-   'To trigger Microsoft Azure OCR in Kofax Transformation, rename the default page OCR profile to "Microsoft OCR"
+   'To trigger Microsoft Azure OCR in Kofax Transformation, rename the default page OCR profile to "Microsoft DI"
    Dim DefaultPageProfileName As String
    DefaultPageProfileName=Project.RecogProfiles.ItemByID(Project.RecogProfiles.DefaultProfileIdPr).Name
    If DefaultPageProfileName="Microsoft DI" Then MicrosoftDI(pXDoc)
@@ -17,22 +17,28 @@ End Sub
 
 Public Sub MicrosoftDI(pXDoc As CscXDocument)
    Dim EndPoint As String, Key As String, RepName As String, StartTime As Long, Cache As String, JSON As String, Model As String, JS As Object
-   Dim TimeStart As Double, TimeEnd As Double, ElapsedTime As Double
+   Dim TimeStart As Double, TimeEnd As Double, ElapsedTime As Double, FileName As String
    RepName="MicrosoftDI"
    'RepName="PDFTEXT"   'uncomment this line if you want Advanced Zone Locator to use Text
    While pXDoc.Representations.Count>0
       If pXDoc.Representations(0).Name=RepName Then Exit Sub 'We already have Microsoft OCR text, no need to call again.
       pXDoc.Representations.Remove(0) ' remove all OCR results from XDocument
    Wend
-   pXDoc.Representations.Create(RepName)
    EndPoint=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceEndpoint").Value 'The Microsoft Azure Cloud URL
    Key=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceKey").Value   'Key to use Microsoft Cognitive Services
    Model=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceModel").Value
    JSON=Cache_Load(pXDoc,"MicrosoftDI_JSON")
+   pXDoc.Representations.Create(RepName)
    If JSON="" Then
+      If pXDoc.CDoc.SourceFiles.Count=1 Then 'Does the XDoc contain 1 or more image files.
+         FileName=pXDoc.CDoc.SourceFiles(0).FileName
+      Else
+         FileName = XDocument_ConvertToMultipageTIFF(pXDoc,False) 'We can send only one image to Microsoft. If we have multiple images,we merge them into a multipage TIFF.
+      End If
       StartTime=Timer
-      JSON=MicrosoftDI_REST(pXDoc.CDoc.SourceFiles(0).FileName,Model,EndPoint,Key,10)
+      JSON=MicrosoftDI_REST(FileName,Model,EndPoint,Key,10)
       TimeEnd=Timer
+      If pXDoc.CDoc.SourceFiles.Count>1 Then Kill FileName 'delete temp multipage tiff
       If TimeEnd<TimeStart Then
          ElapsedTime = CLng(1000 * (86400 - TimeStart + TimeEnd)) ' 86400=24*60^2 = seconds/day. needed if the job started before midnight and finished after midnight
       Else
@@ -158,17 +164,63 @@ Public Function Max(A,b)
    If A>b Then Max=A Else Max=b
 End Function
 
-Function CDouble(t As String) As Double
-   'Convert a string to a double amount safely using the default amount formatter, where you control the decimal separator.
-   'Make sure your amount formatter your choose has "." as the decimal symbol as Microsoft OCR returns coordinates in this format: "137.0"
-   'CLng and CDbl functions use local regional settings
-   Dim F As New CscXDocField, AF As ICscFieldFormatter
-   F.Text=t
-   Set AF=Project.FieldFormatters.ItemByName("DefaultAmountFormatter")
-   AF.FormatField(F)
-   Return F.DoubleValue
+Private Function XDocument_ConvertToMultipageTIFF(ByVal pXDoc As CASCADELib.CscXDocument, Optional ByVal Bitonal As Boolean=True)
+   'Microsoft Document Intelligence API only supports sending a single document.
+   'See "Request Body" at https://westus.dev.cognitive.microsoft.com/docs/services/form-recognizer-api-2023-07-31/operations/AnalyzeDocument
+   'It supports pdf, jpeg, png, tiff, bmp, text, docx, xlsx, pptx, but not multiple images. If we have singlepage images in one document, we need to merge to multipage tiff.
+   Dim NewImg As New CscImage, SourceImg As CscImage, TargetImgPath As String
+   Dim P As Long, FileFormat As Long, ColorFormat As Long
+
+   For P = 0 To pXDoc.CDoc.Pages.Count - 1
+      'Derive new filename from existing name - just replace extension with .tif
+      With pXDoc.CDoc.Pages(P)
+         Set SourceImg=pXDoc.CDoc.Pages(.IndexOfSourceFile).GetImage()
+         If P = 0 Then
+            TargetImgPath = Left(.SourceFileName,InStrRev(.SourceFileName,"\")) & "multipage.tif"
+            If Bitonal Then
+               FileFormat=CscImageFileFormat.CscImgFileFormatTIFFFaxG4
+               ColorFormat=CscImageColorFormat.CscImgColFormatBinary
+            Else
+               Select Case SourceImg.BitsPerSample
+               Case 1
+                  FileFormat=CscImageFileFormat.CscImgFileFormatTIFFFaxG4
+                  ColorFormat=CscImageColorFormat.CscImgColFormatBinary
+               Case 8
+                  FileFormat=CscImageFileFormat.CscImgFileFormatTIFFUncompressed
+                  ColorFormat=CscImageColorFormat.CscImgColFormatGray8
+               Case 16
+                  FileFormat=CscImageFileFormat.CscImgFileFormatTIFFUncompressed
+                  ColorFormat=CscImageColorFormat.CscImgColFormatGray16
+               Case 24
+                  FileFormat=CscImageFileFormat.CscImgFileFormatTIFFUncompressed
+                  ColorFormat=CscImageColorFormat.CscImgColFormatRGB24
+               End Select
+            End If
+           'for the first image, mark the new tiff to remain open for new pages to be added
+           NewImg.StgFilterControl(FileFormat, CscStgCtrlTIFFKeepFileOpen, TargetImgPath, 0, 0)
+         End If
+      End With
+      ' load current page image into the new image that is kept open
+      If Bitonal Then Set SourceImg=SourceImg.BinarizeWithVRS()
+      NewImg.CreateImage(ColorFormat, SourceImg.Width, SourceImg.Height, SourceImg.XResolution, SourceImg.YResolution)
+      NewImg.CopyRect(SourceImg, 0, 0, 0, 0, SourceImg.Width, SourceImg.Height)
+      ' save new image (as KeepFileOpen was set, this will append to the existing file)
+      NewImg.Save(TargetImgPath, FileFormat)
+   Next
+   'close the multi-page TIFF
+   NewImg.StgFilterControl(FileFormat, CscStgCtrlTIFFCloseFile, TargetImgPath, 0, 0)
+   Return TargetImgPath
 End Function
 
+Public Function File_Load(FileName As String) As String
+   Dim L As String
+   Open FileName For Input As #1
+   While Not EOF 1
+      Line Input #1, L
+      File_Load = File_Load & L
+   Wend
+   Close #1
+End Function
 
 Public Function Cache_Load(pXDoc As CscXDocument, RepName As String) As String
    Dim R As Long, Model As String, CacheFileName As String
@@ -302,12 +354,14 @@ Public Sub JSON_Polygon2Rectangle(JS As Object, Key As String, Rectangle As Obje
    Rectangle.Height=Max(CDouble(JS(Key & ".polygon(5)")),CDouble(JS(Key & ".polygon(7)")))-Rectangle.Top
 End Sub
 
-Public Function File_Load(FileName As String) As String
-   Dim L As String
-   Open FileName For Input As #1
-   While Not EOF 1
-      Line Input #1, L
-      File_Load = File_Load & L
-   Wend
-   Close #1
+Function CDouble(t As String) As Double
+   'Convert a string to a double amount safely using the default amount formatter, where you control the decimal separator.
+   'Make sure your amount formatter your choose has "." as the decimal symbol as Microsoft OCR returns coordinates in this format: "137.0"
+   'CLng and CDbl functions use local regional settings
+   Dim F As New CscXDocField, AF As ICscFieldFormatter
+   F.Text=t
+   Set AF=Project.FieldFormatters.ItemByName("DefaultAmountFormatter")
+   AF.FormatField(F)
+   Return F.DoubleValue
 End Function
+

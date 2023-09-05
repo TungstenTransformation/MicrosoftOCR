@@ -43,7 +43,7 @@ page recognition profile : Microsoft DI*
   
 ## Script Variables  
 * **MicrosoftDocumentIntelligenceKey** : *****  
-* **MicrosoftDocumentIntelligenceEndpoint** : https://davidwright.cognitiveservices.azure.com/  
+* **MicrosoftDocumentIntelligenceEndpoint** : https://davidwrightkof.cognitiveservices.azure.com/  
 * **MicrosoftDocumentIntelligenceVersion** : 3.1  
 * **MicrosoftDocumentIntelligenceModel** : prebuilt-document  
   
