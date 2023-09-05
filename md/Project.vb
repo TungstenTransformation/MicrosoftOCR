@@ -14,7 +14,7 @@ End Sub
 
 Public Sub MicrosoftDI(pXDoc As CscXDocument)
    Dim EndPoint As String, Key As String, RepName As String, StartTime As Long, Cache As String, JSON As String, Model As String, JS As Object
-   Dim TimeStart As Double, TimeEnd As Double, ElapsedTime As Double, FileName As String
+   Dim TimeStart As Double, TimeEnd As Double, FileName As String
    RepName="MicrosoftDI"
    'RepName="PDFTEXT"   'uncomment this line if you want Advanced Zone Locator to use Text
    While pXDoc.Representations.Count>0
@@ -36,11 +36,12 @@ Public Sub MicrosoftDI(pXDoc As CscXDocument)
       JSON=MicrosoftDI_REST(FileName,Model,EndPoint,Key,10)
       TimeEnd=Timer
       If pXDoc.CDoc.SourceFiles.Count>1 Then Kill FileName 'delete temp multipage tiff
-      If TimeEnd<TimeStart Then
-         ElapsedTime = CLng(1000 * (86400 - TimeStart + TimeEnd)) ' 86400=24*60^2 = seconds/day. needed if the job started before midnight and finished after midnight
+      If TimeEnd<TimeStart Then 'Store time in milliseconds that Microsoft took to read document
+         pXDoc.TimeOCR = CLng(1000 * (86400 - TimeStart + TimeEnd)) ' 86400=24*60^2 = seconds/day. needed if the job started before midnight and finished after midnight
       Else
          pXDoc.TimeOCR = CLng(1000 * (TimeEnd - TimeStart))  ' this is in milliseconds (accuracy of 1/18th of a second)
       End If
+
       If pXDoc.XValues.ItemExists("MicrosoftDI_Time") Then pXDoc.XValues.Delete("MicrosoftDI_Time")
       pXDoc.XValues.Add("MicrosoftDI_Time",CStr(Timer-StartTime),True)
       Cache_Save(pXDoc,"MicrosoftDI_JSON",JSON)
