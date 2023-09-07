@@ -155,7 +155,7 @@ Public Sub MicrosoftDI_AddTable(pXDoc As CscXDocument, JS As Object, Table As Cs
                XRes=pXDoc.CDoc.Pages(P).XRes
                YRes=pXDoc.CDoc.Pages(P).XRes
             End If
-            JSON_Polygon2Rectangle(JS,Key,Cell, Units, XRes, YRes)
+            JSON_Polygon2Rectangle(JS,BRKey,Cell, Units, XRes, YRes)
             Set Words = pXDoc.GetWordsInRect(P,Cell.Left,Cell.Top, Cell.Width, Cell.Height)
             For W=0 To Words.Count-1
                Cell.AddWordData(Words(W))
