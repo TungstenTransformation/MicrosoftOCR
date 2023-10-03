@@ -61,7 +61,7 @@ Microsoft offers the following services that you can use to read documents.
 
 ## Configure Kofax Transformation
 
-* Copy the [script](Microsoft%20OCR.vb) into the Project Level Class of your KT Project.
+* Copy the [script](md/Project.vb) into the Project Level Class of your KT Project.
 * Rename the Default Page Recognition profile to **Microsoft OCR**. *It doesn't matter what the OCR engine shown is, it will be ignored*.
 * Add two Script Variables to your project in **Project/Configuration/Script Variables**: 
     * **MicrosoftComputerVisionKey**
