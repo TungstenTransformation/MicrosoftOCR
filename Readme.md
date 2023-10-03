@@ -95,7 +95,7 @@ In Project Builder or Design Studio, pressing F4 performs OCR with the built-in 
 
 # How to use Microsoft OCR with Tables
 * Add a table locator to any class, configure your table model.
-* Add the following script to the table class. That last parameter 0 is the index of the table to use. Microsoft might find more than 1 table. this example takes the first=0 table.  
+* Add this [script](md/Table.vb) to the table class. That last parameter 0 is the index of the table to use. Microsoft might find more than 1 table. this example takes the first=0 table.  
 ![Microsoft Table in Table Locator](images/TableLocator_MicrosoftDocumentIntelligence.png) 
 ## Limitations and Potential Improvements
 * force it to use a particular language. By default it supports multiple languages per document.
