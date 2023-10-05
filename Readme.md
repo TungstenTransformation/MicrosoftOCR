@@ -1,4 +1,6 @@
 # Microsoft Azure OCR for Kofax Transformation
+This documentation is for Microsoft Azure Document Intelligence.  
+Click [here](https://github.com/KofaxTransformation/MicrosoftOCR/tree/Microsoft-Computer-Vision#readme) for documentation for [Microsoft Computer Vision](https://github.com/KofaxTransformation/MicrosoftOCR/tree/Microsoft-Computer-Vision#readme) (for photos and images).
 This repository supports different Microsoft OCR engines
 * Document Intelligence 3.0 *optimized for documents*.
 * Document Intelligence 3.1 *coming*
