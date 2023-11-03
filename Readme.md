@@ -1,9 +1,8 @@
-# Microsoft Azure Docment Intelligence for Kofax Transformation
+# Microsoft Azure Document Intelligence for Kofax Transformation
 This documentation is for Microsoft Azure Document Intelligence.  
 Click [here](https://github.com/KofaxTransformation/MicrosoftOCR/tree/Microsoft-Computer-Vision#readme) for documentation for [Microsoft Computer Vision](https://github.com/KofaxTransformation/MicrosoftOCR/tree/Microsoft-Computer-Vision#readme) (for photos and images).  
 This repository supports different Microsoft OCR engines
-* Document Intelligence 3.0 *optimized for documents*.
-* Document Intelligence 3.1 *coming*
+* Document Intelligence 3.1 *optimized for documents*.
 * [Azure Computer Vision OCR 3.2](https://github.com/KofaxTransformation/MicrosoftOCR/tree/Computer-Vision-OCR-3.2) *optimized for images and not documents*.
 * **Azure AI Vision OCR for Images 4.0** *coming*
 ## Downloads
@@ -63,7 +62,7 @@ Microsoft offers the following services that you can use to read documents.
 
 ## Configure Kofax Transformation
 
-* Copy the [script](md/Project.vb) into the Project Level Class of your KT Project.
+* Copy the [script](/MicrosoftDI/md/Project.vb) into the Project Level Class of your KT Project.
 * Rename the Default Page Recognition profile to **Microsoft OCR**. *It doesn't matter what the OCR engine shown is, it will be ignored*.
 * Add three Script Variables to your project in **Project/Configuration/Script Variables**: 
     * **MicrosoftComputerVisionKey**
@@ -85,7 +84,7 @@ Microsoft offers the following services that you can use to read documents.
 * Configure the AZL as normal. Make sure for each zone that you check **Use PDF text if available** in the Zone Properties.
   * When you press **Test** in the Zone properties it will always show 100% confidence. The script cannot fix this, but it can fix the confidence in the output of the locator.
   * Make sure that the AZL zones completely surround the Microsoft OCR text. If they don't completely surround the text then OCR is performed.
-* Add the following [script](AZL_Microsoft%20OCR.vb) to the class level script where you have the Zone Locators.
+* Add the following [script](/MicrosoftOCR/md/AZL.vb) to the class level script where you have the Zone Locators.
 * In the select statement, add the names of the Zone Locators where you want the confidences recalculated. Note - the script is not checking the flag **Use PDF text if available**, it is simply changing the confidence of every subfield.
 * Test the AZL, you will probably see confidences in the high 90s for Microsoft OCR.
 
@@ -95,9 +94,9 @@ In KTM and KTA runtime. Kofax Transformation performs OCR on demand, either when
 This script runs in the event **Document_BeforeClassify**, which occurs before KT ever tries to OCR the document. The script checks if you named a profile "Microsoft OCR". If so, it sends each page of the document to Microsoft and copies the words and coordinates into the XDocument. The XDocument now has an OCR layer called "Microsoft OCR", which will be used by the classifiers and locators - OCR won't be called again with another document.
 In Project Builder or Design Studio, pressing F4 performs OCR with the built-in engines. To force it to use Microsoft OCR, press F5 (Classify) to send the document to Microsoft.
 
-# How to use Microsoft OCR with Tables
+# How to use Microsoft Document Intelligence with Tables
 * Add a table locator to any class, configure your table model.
-* Add this [script](md/Table.vb) to the table class. That last parameter 0 is the index of the table to use. Microsoft might find more than 1 table. this example takes the first=0 table.  
+* Add this [script](/MicrosoftDI/md/Table.vb) to the table class. That last parameter 0 is the index of the table to use. Microsoft might find more than 1 table. this example takes the first=0 table.  
 ![Microsoft Table in Table Locator](images/TableLocator_MicrosoftDocumentIntelligence.png) 
 ## Limitations and Potential Improvements
 * force it to use a particular language. By default it supports multiple languages per document.

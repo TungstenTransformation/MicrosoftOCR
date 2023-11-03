@@ -24,7 +24,7 @@ Public Sub MicrosoftDI(pXDoc As CscXDocument)
    EndPoint=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceEndpoint").Value 'The Microsoft Azure Cloud URL
    Key=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceKey").Value   'Key to use Microsoft Cognitive Services
    Model=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceModel").Value
-   JSON=Cache_Load(pXDoc,"MicrosoftDI_JSON")
+   'JSON=Cache_Load(pXDoc,"MicrosoftDI_JSON")
    pXDoc.Representations.Create(RepName)
    If JSON="" Then
       If pXDoc.CDoc.SourceFiles.Count=1 Then 'Does the XDoc contain 1 or more image files.
@@ -84,19 +84,18 @@ Public Function MicrosoftDI_REST(ImageFileName As String, Model As String, EndPo
    For I= 1 To 100
       Wait Delay
       Set HTTP = New MSXML2.XMLHTTP60
-      HTTP.Open("GET", OperationLocation,varAsync:=False)
+      HTTP.Open("GET", OperationLocation  & "&a=" & CStr(I) ,varAsync:=False) 'pass a random parameter each time so Windows doesn't cache
       HTTP.setRequestHeader("Ocp-Apim-Subscription-Key", Key)
       HTTP.send()
       Set getRequestStatus = RegexAzureStatus.Execute(HTTP.responseText)
-      status=getRequestStatus(0).SubMatches(0)
       If HTTP.status<>200 Then Err.Raise (655,,"Microsoft OCR Error: (" & HTTP.status & ") " & HTTP.responseText)
+      status=getRequestStatus(0).SubMatches(0)
       Select Case status
       Case "succeeded"
          Exit For
       Case "failed"
             Err.Raise (656,,"Microsoft OCR Error: (" & HTTP.status & ") " & HTTP.responseText)
       Case "running", "notStarted"
-         Delay=Delay+1 ' wait 1 second longer next time
       End Select
    Next
    Return HTTP.responseText
