@@ -9,6 +9,7 @@ project version= 22.0
 ## Formatters  
 * **DefaultDateFormatter** *DateFormatter**  
 * **DefaultAmountFormatter** *AmountFormatter**  
+* **USAmountFormatter** *AmountFormatter*  
 ## Databases  
 ## Dictionaries  
 ## Table Settings  
@@ -43,6 +44,6 @@ page recognition profile : Microsoft OCR*
   
 ## Script Variables  
 * **MicrosoftComputerVisionKey** : *****  
-* **MicrosoftComputerVisionEndpoint** : https://davidwrightkof.cognitiveservices.azure.com/  
+* **MicrosoftComputerVisionEndpoint** : https://computervisiondavidwright.cognitiveservices.azure.com/  
 * **MicrosoftFormRecognizerModel** : prebuilt-document  
   
