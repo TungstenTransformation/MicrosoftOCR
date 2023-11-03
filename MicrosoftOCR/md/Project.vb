@@ -28,7 +28,7 @@ Public Sub MicrosoftOCR_Read(pXDoc As CscXDocument)
    For P=0 To pXDoc.CDoc.Pages.Count-1
       JSON=MicrosoftOCR_REST(pXDoc.CDoc.Pages(P).SourceFileName,EndPoint,Key)
       Set JS= JSON_Parse(JSON)
-      MicrosoftOCR_AddWords(pXDoc, JS, P)
+      MicrosoftOCR_AddWords(pXDoc, JS, P, UseMicrosoftTextLines:=True)
    Next
 End Sub
 
@@ -78,7 +78,7 @@ Public Function MicrosoftOCR_REST(ImageFileName As String, EndPoint As String, K
    MicrosoftOCR_REST = HTTP.responseText
 End Function
 
-Public Sub MicrosoftOCR_AddWords(pXDoc As CscXDocument, JS As Object, PageOffset As Long)
+Public Sub MicrosoftOCR_AddWords(pXDoc As CscXDocument, JS As Object, PageOffset As Long, Optional UseMicrosoftTextLines As Boolean)
    Dim P As Long, W As Long, Key As String, Confidences As String, Word As CscXDocWord, Units As String, XRes As Double, YRes As Double, L As Long
    For P=0 To JS("js.analyzeResult.readResults._count")-1
       Units=JS("js.analyzeResult.readResults(" & CStr(P) & ").unit")
@@ -92,7 +92,14 @@ Public Sub MicrosoftOCR_AddWords(pXDoc As CscXDocument, JS As Object, PageOffset
              Set Word = New CscXDocWord
              Word.Text=JSON_Unescape(JS(Key & ".text"))
              Word.PageIndex=P
-             JSON_Polygon2Rectangle(JS,Key,Word,Units,XRes,YRes)
+             If UseMicrosoftTextLines Then 'Give all the words FAKE coordinates so that KT sees Microsoft's Textlines
+               Word.Left=W*10
+               Word.Width=5
+               Word.Top=L*10
+               Word.Height=5
+             Else
+                JSON_Polygon2Rectangle(JS,Key,Word,Units,XRes,YRes) 'Give the words the correct coordinates
+             End If
              Confidences = Confidences & JS(Key & ".confidence") & ","
              pXDoc.Pages(P+PageOffset).AddWord(Word)
           Next
@@ -103,13 +110,25 @@ Public Sub MicrosoftOCR_AddWords(pXDoc As CscXDocument, JS As Object, PageOffset
    If pXDoc.XValues.ItemExists("MicrosoftOCR_WordConfidences") Then pXDoc.XValues.Delete("MicrosoftOCR_WordConfidences")
    pXDoc.XValues.Add("MicrosoftOCR_WordConfidences",Confidences,True)
    pXDoc.Representations(0).AnalyzeLines 'Redo Text Line Analysis in Kofax Transformation
+   If Not UseMicrosoftTextLines Then Exit Sub
+   'restore word coordinates after textlines created
+   For W=0 To pXDoc.Words.Count-1
+      Set Word=pXDoc.Words(W)
+      Key="js.analyzeResult.readResults(" & Word.PageIndex & ").lines(" & Word.LineIndex & ").words(" & Word.IndexInTextLine & ")"
+      Units=JS("js.analyzeResult.readResults(" & CStr(Word.PageIndex) & ").unit")
+      If Units="inch" Then
+         XRes=pXDoc.CDoc.Pages(P).XRes
+         YRes=pXDoc.CDoc.Pages(P).XRes
+      End If
+      JSON_Polygon2Rectangle(JS,Key,Word,Units,XRes,YRes)
+   Next
 End Sub
 
-Public Function min(a,b)
-   If a<b Then min=a Else min=b
+Public Function min(A,b)
+   If A<b Then min=A Else min=b
 End Function
-Public Function max(a,b)
-   If a>b Then max=a Else max=b
+Public Function max(A,b)
+   If A>b Then max=A Else max=b
 End Function
 
 '-------------------------------------------------------------------
