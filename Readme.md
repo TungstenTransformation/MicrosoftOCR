@@ -5,6 +5,8 @@ This repository supports different Microsoft OCR engines
 * Document Intelligence 3.1 *optimized for documents*.
 * [Azure Computer Vision OCR 3.2](https://github.com/KofaxTransformation/MicrosoftOCR/tree/Computer-Vision-OCR-3.2) *optimized for images and not documents*.
 * **Azure AI Vision OCR for Images 4.0** *coming*
+
+[Install Microsoft OCR and DI on premise](/MicrosoftOCR_OnPrem.md).
 ## Downloads
 * [Version 1.0.6](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.6) (5 Sep 2023). Fixed inches, "Value" subfield. Added support for png, jpeg, bmp, multiple images in a single document.
 * [Version 1.0.5](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.5) (29 Aug 2023). [Fixed](https://github.com/KofaxTransformation/MicrosoftOCR/commit/62a36fca545373683e7cd807bb3532779e0661e7) error reading model name. Write Microsoft [processing time](https://github.com/KofaxTransformation/MicrosoftOCR/commit/2a1d43c79cd34010817dcc8f64003387a3cb7391) in milliseconds to first word in XDoc Rep called "MicrosoftDI_ProcessingTime".
