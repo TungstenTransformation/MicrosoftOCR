@@ -19,15 +19,19 @@ End Sub
 Public Sub MicrosoftOCR_Read(pXDoc As CscXDocument)
    Dim EndPoint As String, Key As String, JSON As String, P As Long, JS As Dictionary
    While pXDoc.Representations.Count>0
-      If pXDoc.Representations(0).Name="Microsoft OCR" Then Exit Sub 'We already have Microsoft OCR text, no need to call again.
+      'If pXDoc.Representations(0).Name="Microsoft OCR" Then Exit Sub 'We already have Microsoft OCR text, no need to call again.
       pXDoc.Representations.Remove(0) ' remove all OCR results from XDocument
    Wend
    pXDoc.Representations.Create("Microsoft OCR")
    EndPoint=Project.ScriptVariables.ItemByName("MicrosoftComputerVisionEndpoint").Value 'The Microsoft Azure Cloud URL
    Key=Project.ScriptVariables.ItemByName("MicrosoftComputerVisionKey").Value   'Key to use Microsoft Cognitive Services
    For P=0 To pXDoc.CDoc.Pages.Count-1
-      JSON=MicrosoftOCR_REST(pXDoc.CDoc.Pages(P).SourceFileName,EndPoint,Key)
+      'JSON=MicrosoftOCR_REST(pXDoc.CDoc.Pages(P).SourceFileName,EndPoint,Key)
+      Open Replace(pXDoc.FileName, ".xdc",".json") For Input As #1
+         JSON=Input(LOF(1),1)
+      Close 1
       Set JS= JSON_Parse(JSON)
+      Exit Sub '  remove XXXXXX! DEBUG
       MicrosoftOCR_AddWords(pXDoc, JS, P, UseMicrosoftTextLines:=True)
    Next
 End Sub
@@ -131,108 +135,13 @@ Public Function max(A,b)
    If A>b Then max=A Else max=b
 End Function
 
-'-------------------------------------------------------------------
-' VBA JSON Parser https://github.com/KofaxTransformation/KTScripts/blob/master/JSON%20parser%20in%20vb.md
-'-------------------------------------------------------------------
-Private t As Long, tokens() As String, dic As Object
-Function JSON_Parse(JSON$, Optional Key$ = "js") As Object
-    t = 1
-    tokens = JSON_Tokenize(JSON)
-    Set dic = CreateObject("Scripting.Dictionary")
-    If tokens(t) = "{" Then JSON_ParseObj(Key) Else JSON_ParseArr(Key)
-    Return dic
-End Function
-Function JSON_ParseObj(Key$)
-    Do
-      t = t + 1
-     Select Case tokens(t)
-         Case "]"
-         Case "[":  JSON_ParseArr(Key)
-         Case "{"
-                    If tokens(t + 1) = "}" Then
-                        T = T + 1
-                        dic.Add(Key, "null")
-                    Else
-                        JSON_ParseObj(Key)
-                    End If
-
-         Case "}":  Key = JSON_ParentPath(Key): Exit Do
-         Case ":":  Key = Key & "." & tokens(T - 1) 'previous token was a key - remember it
-         Case ",":  Key = JSON_ParentPath(Key)
-         Case Else 'we are in a string. if next is not ":" then we are value - so add to dict!
-            If tokens(T + 1) <> ":" Then dic.Add(Key, tokens(T))
-     End Select
-    Loop
-End Function
-Function JSON_ParseArr(Key$)
-   Dim A As Long
-   Do
-      T = T + 1
-      Select Case tokens(T)
-         Case "}"
-         Case "{":  JSON_ParseObj(Key & JSON_ArrayID(A))
-         Case "[":  JSON_ParseArr(Key)
-         Case "]":  Exit Do
-         Case ":":  Key = Key & JSON_ArrayID(A)
-         Case ",":  A = A + 1
-         Case Else: dic.Add(Key & JSON_ArrayID(A), tokens(T))
-      End Select
-   Loop
-   dic.Add(Key & "._count",A+1) 'store array length in dictionary
-End Function
-
-Function JSON_Tokenize(S As String) 'completely split the JSON string fast into an array of tokens for the parsers
-   Dim C As Long, m As Object, n As Object, tokens() As String
-   Const Pattern = """(([^""\\]|\\.)*)""|[+\-]?(?:0|[1-9]\d*)(?:\.\d*)?(?:[eE][+\-]?\d+)?|\w+|[^\s""']+?"
-   With CreateObject("vbscript.regexp")
-      .Global = True
-      .Multiline = False
-      .IgnoreCase = True
-      .Pattern = Pattern
-      Set m = .Execute(S)
-      ReDim tokens(1 To m.Count)
-      For Each n In m
-        C = C + 1
-        tokens(C) = n.Value
-        If True Then ' bGroup1Bias=?? when is this needed
-           If Len(n.SubMatches(0)) Or n.Value = """""" Then
-              tokens(C) = n.SubMatches(0)
-           End If
-        End If
-      Next
-  End With
-  Return tokens
-End Function
-
-Function JSON_ArrayID(e) As String
-    Return "(" & e & ")"
-End Function
-
-Function JSON_ParentPath(Key As String) As String 'go to the parent key
-    If InStr(Key, ".") Then Return Left(Key, InStrRev(Key, ".") - 1)
-    'else?
-End Function
-
-Public Function JSON_Unescape(A As String) As String
-   'https://www.json.org/json-en.html
-   A=Replace(A,"\""","""") 'double quote
-   A=Replace(A,"\\","\") 'backslash
-   A=Replace(A,"\/","/") 'forward slash
-   A=Replace(A,"\b","") 'backspace
-   A=Replace(A,"\f","") 'form feed
-   A=Replace(A,"\n","") 'new line
-   A=Replace(A,"\r","") 'carraige return
-   A=Replace(A,"\t","") 'tab
-   Return A
-End Function
-
 Public Sub JSON_Polygon2Rectangle(JS As Object, Key As String, Rectangle As Object, Units As String, XRes As Long, YRes As Long)
    'Microsoft returns the coordinates of a region as JSON ->   "polygon": [1848,492,1896,494,1897,535,1849,535]
    'We need to convert this to  .left, .width, .top and .height
-   Rectangle.Left=  min(CDouble(JS(Key & ".boundingBox(0)")),CDouble(JS(Key & ".boundingBox(6)")))
-   Rectangle.Width= max(CDouble(JS(Key & ".boundingBox(2)")),CDouble(JS(Key & ".boundingBox(4)")))-Rectangle.Left
-   Rectangle.Top =  min(CDouble(JS(Key & ".boundingBox(1)")),CDouble(JS(Key & ".boundingBox(3)")))
-   Rectangle.Height=max(CDouble(JS(Key & ".boundingBox(5)")),CDouble(JS(Key & ".boundingBox(7)")))-Rectangle.Top
+   Rectangle.Left=  min(JS(Key & ".boundingBox(0)"),JS(Key & ".boundingBox(6)"))
+   Rectangle.Width= max(JS(Key & ".boundingBox(2)"),JS(Key & ".boundingBox(4)"))-Rectangle.Left
+   Rectangle.Top =  min(JS(Key & ".boundingBox(1)"),JS(Key & ".boundingBox(3)"))
+   Rectangle.Height=max(JS(Key & ".boundingBox(5)"),JS(Key & ".boundingBox(7)"))-Rectangle.Top
    If Units="inch" Then
       Rectangle.Left=Rectangle.Left*XRes
       Rectangle.Width=Rectangle.Width*XRes
@@ -241,13 +150,140 @@ Public Sub JSON_Polygon2Rectangle(JS As Object, Key As String, Rectangle As Obje
    End If
 End Sub
 
-Function CDouble(t As String) As Double
-   'Convert a string to a double amount safely using the default amount formatter, where you control the decimal separator.
-   'Make sure your amount formatter your choose has "." as the decimal symbol as Microsoft OCR returns coordinates in this format: "137.0"
-   'CLng and CDbl functions use local regional settings
-   Dim F As New CscXDocField, AF As ICscFieldFormatter
-   F.Text=t
-   Set AF=Project.FieldFormatters.ItemByName("USAmountFormatter")
-   AF.FormatField(F)
-   Return F.DoubleValue
+
+'-------------------------------------------------------------------
+' VBA JSON Parser https://github.com/KofaxTransformation/KTScripts/blob/master/JSON%20parser%20in%20vb.md
+'-------------------------------------------------------------------
+Private T As Long, Tokens As Object, Keys As Object
+Function JSON_Parse(JSON As String, Optional Key As String = "$") As Object
+   'This is 100% compliant with ECMA-404 JSON Data Interchange Standard at https://www.json.org/json-en.html
+   'the regex pattern finds strings including characters escaped with \ OR numbers OR true/false/null OR \\{}:,[]
+   'tested at https://regex101.com/r/YkiVdc/1
+   'This script will crash on invalid JSON
+   With CreateObject("vbscript.regexp")
+      .Global=True
+      .Pattern = """(?:[^""\\]|\\.)*""|-?(?:\d+)(?:\.\d*)?(?:[eE][+\-]?\d+)?|(?:true|false|null)|[\[\]{}:,]"
+      Set tokens=.Execute(JSON)
+   End With
+   T = 0
+   Set Keys = CreateObject("Scripting.Dictionary")
+   If Tokens(T) = "{" Then JSON_ParseObject(Key) Else JSON_ParseArray(Key)
+   Return Keys
 End Function
+
+Sub JSON_ParseObject(Key As String)
+    Do
+      T = t + 1
+     Select Case tokens(t).Value
+         Case "]"
+         Case "[":  JSON_ParseArray(Key)
+         Case "{"
+                    If tokens(t + 1).Value = "}" Then
+                        t = t + 1
+                        Keys.Add(Key, Nothing) 'empty object
+                    Else
+                        JSON_ParseObject(Key)
+                    End If
+         Case "}":
+            If tokens(t - 1).Value = "{" Then Keys.Add(Key, Nothing) ' this was an empty object
+            Key = JSONPath_Parent(Key)
+            Exit Do
+         Case ":":  Key = Key & "." & JSON_Value(tokens(t - 1).Value) 'previous token was a name - remember it
+         Case ",":  Key = JSONPath_Parent(Key)
+         Case Else 'we are in a string. if next is not ":" then we are value
+            If tokens(t + 1).Value <> ":" Then Keys.Add(Key, JSON_Value(tokens(t).Value))
+     End Select
+     Keys_ToText
+    Loop
+End Sub
+
+Sub JSON_ParseArray(Key As String)
+   Dim A As Long ' Array index
+   Do
+      T = t + 1
+      Select Case tokens(t).Value
+         Case "[":
+            If tokens(t + 1).Value = "]" Then 'empty array
+               Key=Key & JSON_ArrayID(A)
+               Keys.Add(Key, Nothing)
+               A=-1
+               Exit Do
+            End If
+            JSON_ParseArray(Key & JSON_ArrayID(A)) 'start of an array inside an array
+         Case "{":
+            JSON_ParseObject(Key & JSON_ArrayID(A)) 'it's an object so recurse
+         Case "}":
+            If tokens(t - 1).Value = "}" Then Keys.Add(Key & JSON_ArrayID(A), Nothing) 'empty object
+         Case ":":  Key = Key & JSON_ArrayID(A)
+         Case ",":  A = A + 1
+         Case "]":
+            Exit Do
+         Case Else: Keys.Add(Key & JSON_ArrayID(A), JSON_Value(tokens(t).Value))
+      End Select
+      Keys_ToText
+   Loop
+   Keys.Add(Key & ".length",A + 1) 'store array length in dictionary
+   Keys_ToText
+End Sub
+
+Function JSON_ArrayID(e As Long) As String
+    Return "(" & CStr(e) & ")"
+End Function
+
+Function JSONPath_Parent(Key As String) As String 'go to the parent key
+    If InStr(Key, ".") Then Return Left(Key, InStrRev(Key, ".") - 1)
+End Function
+
+Function JSON_Value(Value As String) 'JSON values can be string, number, true, false or null
+   'Strings start with a " in JSON - everything else is true,false, null or a number
+   Dim Locale As Long, Number As Double
+   If Left (Value,1)="""" Then Return JSON_Unescape(Mid(Value,2,Len(Value)-2)) 'strip " from begin and end of string
+   Select Case Value
+   Case "true"
+      Return True
+   Case "false"
+      Return False
+   Case "null"
+      Return Nothing
+   Case Else 'it has to be a number
+      Locale=GetLocale() 'preserve locale
+      SetLocale(1033) 'en_us
+      'these are valid JSON numbers: 1 -1 0 -0.1 1111111111 0.1 1.0000 1.0e5 -1e-5 1E5 0e3 0e-3
+      'these are invalid JSON numbers, but CDbl converts them correctly: +1 .6 1.e5 -.5 e6
+      Number=CDbl(Value) 'CDbl() function luckily converts all allowed JSON number formats
+      SetLocale(Locale)
+      Return Number
+   End Select
+End Function
+
+Public Function JSON_Unescape(A As String) As String
+   'https://www.json.org/json-en.html
+   Dim Hex As String
+   A=Replace(A,"\""","""") 'double quote
+   A=Replace(A,"\/","/") 'forward slash
+   A=Replace(A,"\b",vbBack) 'backspace
+   A=Replace(A,"\f",vbLf) 'form feed
+   A=Replace(A,"\n",vbCrLf) 'new line
+   A=Replace(A,"\r",vbCr) 'carraige return
+   A=Replace(A,"\t",vbTab) 'tab
+   A=Replace(A,"\\","\") 'backslash
+   While InStr(A,"\u")  'hex encoded Unicode characters
+      Hex=Mid(A,InStr(A,"\u")+2,4)
+      A=Replace(A,"\u" & Hex, ChrW(Val("&H" & Hex)))
+   Wend
+   'This is not handling \u with 4 hex digits
+   Return A
+End Function
+
+Sub Keys_ToText()  'for Debugging
+   Dim Key As String, Value As Variant
+   Open "c:\temp\keys.txt" For Output As #1
+   Print #1, vbUTF8BOM;
+   For Each Key In Keys.Keys
+      Value=Keys(Key)
+      If TypeName(Value)="String" Then Value = """" & Value & """"
+      If TypeName(Value)="Nothing" Then Value = "null"
+      Print #1, Key & " : " & Value
+   Next
+   Close 1
+End Sub
