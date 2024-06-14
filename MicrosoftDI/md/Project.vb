@@ -13,7 +13,7 @@ Private Sub Document_BeforeClassifyXDoc(ByVal pXDoc As CASCADELib.CscXDocument, 
 End Sub
 
 Public Sub MicrosoftDI(pXDoc As CscXDocument)
-   Dim EndPoint As String, Key As String, RepName As String, StartTime As Long, Cache As String, JSON As String, Model As String, JS As Object
+   Dim EndPoint As String, Key As String, RepName As String, StartTime As Long, Cache As String, JSON As String, Model As String, JS As Object, Version As String
    Dim TimeStart As Double, TimeEnd As Double, FileName As String
    RepName="MicrosoftDI"
    'RepName="PDFTEXT"   'uncomment this line if you want Advanced Zone Locator to use Text
@@ -24,6 +24,7 @@ Public Sub MicrosoftDI(pXDoc As CscXDocument)
    EndPoint=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceEndpoint").Value 'The Microsoft Azure Cloud URL
    Key=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceKey").Value   'Key to use Microsoft Cognitive Services
    Model=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceModel").Value
+   Version=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceAPIVersion").Value
    'JSON=Cache_Load(pXDoc,"MicrosoftDI_JSON")
    pXDoc.Representations.Create(RepName)
    If JSON="" Then
@@ -33,7 +34,7 @@ Public Sub MicrosoftDI(pXDoc As CscXDocument)
          FileName = XDocument_ConvertToMultipageTIFF(pXDoc,False) 'We can send only one image to Microsoft. If we have multiple images,we merge them into a multipage TIFF.
       End If
       StartTime=Timer
-      JSON=MicrosoftDI_REST(FileName,Model,EndPoint,Key,10)
+      JSON=MicrosoftDI_REST(FileName,Model,EndPoint,Version,Key,10)
       TimeEnd=Timer
       If pXDoc.CDoc.SourceFiles.Count>1 Then Kill FileName 'delete temp multipage tiff
       If TimeEnd<TimeStart Then 'Store time in milliseconds that Microsoft took to read document
@@ -50,7 +51,7 @@ Public Sub MicrosoftDI(pXDoc As CscXDocument)
    MicrosoftDI_AddWords(pXDoc, JS, 0)
 End Sub
 
-Public Function MicrosoftDI_REST(ImageFileName As String, Model As String, EndPoint As String, Key As String,Retries As Long) As String
+Public Function MicrosoftDI_REST(ImageFileName As String, Model As String, EndPoint As String, Version As String, Key As String,Retries As Long) As String
    'Call Microsoft Azure Form Recognizer 3.0
    'https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/how-to-guides/use-sdk-rest-api?view=doc-intel-3.1.0&tabs=windows&pivots=programming-language-rest-api
    'model = prebuilt-document
@@ -61,8 +62,8 @@ Public Function MicrosoftDI_REST(ImageFileName As String, Model As String, EndPo
       ReDim Image (0 To LOF(1)-1)
       Get #1,, Image
    Close #1
-   'version=2023-07-31, version=2022-08-31
-   URL=EndPoint & "formrecognizer/documentModels/" & Model & ":analyze?api-version=2023-07-31&stringIndexType=textElements"
+   '
+   URL=EndPoint & "/documentintelligence/documentModels/" & Model & ":analyze?_overload=analyzeDocument&api-version=" & Version
    HTTP.Open("POST", URL ,varAsync:=False)
    HTTP.setRequestHeader("Ocp-Apim-Subscription-Key", Key)
    Extension =LCase(Right(ImageFileName,InStrRev(ImageFileName,".")+1))
@@ -378,4 +379,3 @@ Function CDouble(t As String) As Double
    AF.FormatField(F)
    Return F.DoubleValue
 End Function
-
