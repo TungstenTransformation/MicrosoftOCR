@@ -1,4 +1,6 @@
 # Microsoft Azure Document Intelligence for Kofax Transformation
+
+**NOTE** The correct model name for US W-2 tax forms is **prebuilt-tax.us.w2** and not **prebuilt-tax.us.W-2**. The [microsoft website](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/concept-tax-document?view=doc-intel-4.0.0) is incorrect.
 This documentation is for Microsoft Azure Document Intelligence.  
 Click [here](https://github.com/KofaxTransformation/MicrosoftOCR/tree/Microsoft-Computer-Vision#readme) for documentation for [Microsoft Computer Vision](https://github.com/KofaxTransformation/MicrosoftOCR/tree/Microsoft-Computer-Vision#readme) (for photos and images).  
 This repository supports different Microsoft OCR engines
