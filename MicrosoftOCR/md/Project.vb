@@ -1,64 +1,90 @@
-'#Reference {F5078F18-C551-11D3-89B9-0000F81FE221}#6.0#0#C:\Windows\SysWOW64\msxml6.dll#Microsoft XML, v6.0#MSXML2
-'#Reference {BEE4BFEC-6683-3E67-9167-3C0CBC68F40A}#2.4#0#C:\Windows\Microsoft.NET\Framework\v4.0.30319\System.tlb#System#System
-'#Reference {3F4DACA7-160D-11D2-A8E9-00104B365C9F}#5.5#0#C:\Windows\SysWOW64\vbscript.dll\3#Microsoft VBScript Regular Expressions 5.5#VBScript_RegExp_55
 '#Reference {420B2830-E718-11CF-893D-00A0C9054228}#1.0#0#C:\Windows\SysWOW64\scrrun.dll#Microsoft Scripting Runtime#Scripting
-'#Language "WWB-COM"
+'#Reference {3F4DACA7-160D-11D2-A8E9-00104B365C9F}#5.5#0#C:\Windows\SysWOW64\vbscript.dll\3#Microsoft VBScript Regular Expressions 5.5#VBScript_RegExp_55
+'#Reference {F5078F18-C551-11D3-89B9-0000F81FE221}#6.0#0#C:\Windows\SysWOW64\msxml6.dll#Microsoft XML, v6.0#MSXML2
 Option Explicit
-   'On Menu/Edit/References... Add reference to "Microsoft XML, v 6.0"
-   'On Menu/Edit/References... Add reference to "Microsoft VB Regular Expressions 5.5"
-   'On Menu/Edit/References... Add reference to "Microsoft Scripting Runtime"
-
 ' Project Script
+'#Language "WWB-COM"
 
 Private Sub Document_BeforeClassifyXDoc(ByVal pXDoc As CASCADELib.CscXDocument, ByRef bSkip As Boolean)
-   'To trigger Microsoft Azure OCR in Kofax Transformation, rename the default page OCR profile to "Microsoft OCR"
+   'To trigger Microsoft Azure OCR in Kofax Transformation, rename the default page OCR profile to "Microsoft DI"
    Dim DefaultPageProfileName As String
    DefaultPageProfileName=Project.RecogProfiles.ItemByID(Project.RecogProfiles.DefaultProfileIdPr).Name
-   If DefaultPageProfileName="Microsoft OCR" Then MicrosoftOCR_Read(pXDoc)
+   If DefaultPageProfileName="Microsoft DI" Then MicrosoftDI(pXDoc)
 End Sub
 
-Public Sub MicrosoftOCR_Read(pXDoc As CscXDocument)
-   Dim EndPoint As String, Key As String, JSON As String, P As Long, JS As Object, JSONFile As String
+Private Sub Document_AfterClassifyXDoc(ByVal pXDoc As CASCADELib.CscXDocument)
+   Dim Model As String, JSONs As String, JSON As Object, className As String, confidence As Double
+   JSONs=Cache_Load(pXDoc,"MicrosoftDI_JSON",False) 'Get the Microsoft DI response JSON if it is there.
+   Set JSON=JSON_Parse(JSONs)
+   className=JSON("analyzeResult")("documents")(0)("docType")
+   confidence=JSON("analyzeResult")("documents")(0)("confidence")
+   pXDoc.Reclassify(className,confidence)
+End Sub
+
+Public Sub MicrosoftDI(pXDoc As CscXDocument)
+   Dim EndPoint As String, Key As String, RepName As String, StartTime As Long, Cache As String, JSON As String, Model As String, JS As Object, Version As String
+   Dim TimeStart As Double, TimeEnd As Double, FileName As String
+   RepName="MicrosoftDI"
+   'RepName="PDFTEXT"   'uncomment this line if you want Advanced Zone Locator to use Text
    While pXDoc.Representations.Count>0
-      'If pXDoc.Representations(0).Name="Microsoft OCR" Then Exit Sub 'We already have Microsoft OCR text, no need to call again.
+      If pXDoc.Representations(0).Name=RepName Then Exit Sub 'We already have Microsoft OCR text, no need to call again.
       pXDoc.Representations.Remove(0) ' remove all OCR results from XDocument
    Wend
-   EndPoint=Project.ScriptVariables.ItemByName("MicrosoftComputerVisionEndpoint").Value 'The Microsoft Azure Cloud URL
-   Key=Project.ScriptVariables.ItemByName("MicrosoftComputerVisionKey").Value   'Key to use Microsoft Cognitive Services
-   For P=0 To pXDoc.CDoc.Pages.Count-1
-      JSONFile = Replace(pXDoc.FileName, ".xdc", "_" & Format("00",P) & ".json")
-      If Dir(JSONFile)="" Then
-         JSON=MicrosoftOCR_REST(pXDoc.CDoc.Pages(P).SourceFileName,EndPoint,Key)
-         Open JSONFile For Output As #1
-            Print #1, vbUTF8BOM & JSON
-         Close 1
+   EndPoint=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceEndpoint").Value 'The Microsoft Azure Cloud URL
+   Key=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceKey").Value   'Key to use Microsoft Cognitive Services
+   Model=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceModel").Value
+   Version=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceAPIVersion").Value
+   'JSON=Cache_Load(pXDoc,"MicrosoftDI_JSON")
+   pXDoc.Representations.Create(RepName)
+   If JSON="" Then
+      If pXDoc.CDoc.SourceFiles.Count=1 Then 'Does the XDoc contain 1 or more image files.
+         FileName=pXDoc.CDoc.SourceFiles(0).FileName
       Else
-         Open JSONFile For Input As #1
-            JSON=Input(LOF(1),1)
-         Close 1
+         FileName = XDocument_ConvertToMultipageTIFF(pXDoc,False) 'We can send only one image to Microsoft. If we have multiple images,we merge them into a multipage TIFF.
       End If
-      Set JS= JSON_Parse(JSON)
-      If pXDoc.Representations.Count=0 Then pXDoc.Representations.Create("Microsoft OCR")
-      MicrosoftOCR_AddWords(pXDoc, JS, P, UseMicrosoftTextLines:=True)
-   Next
+      StartTime=Timer
+      JSON=MicrosoftDI_REST(FileName,Model,EndPoint,Version,Key,10)
+      TimeEnd=Timer
+      If pXDoc.CDoc.SourceFiles.Count>1 Then Kill FileName 'delete temp multipage tiff
+      If TimeEnd<TimeStart Then 'Store time in milliseconds that Microsoft took to read document
+         pXDoc.TimeOCR = CLng(1000 * (86400 - TimeStart + TimeEnd)) ' 86400=24*60^2 = seconds/day. needed if the job started before midnight and finished after midnight
+      Else
+         pXDoc.TimeOCR = CLng(1000 * (TimeEnd - TimeStart))  ' this is in milliseconds (accuracy of 1/18th of a second)
+      End If
+
+      If pXDoc.XValues.ItemExists("MicrosoftDI_Time") Then pXDoc.XValues.Delete("MicrosoftDI_Time")
+      pXDoc.XValues.Add("MicrosoftDI_Time",CStr(Timer-StartTime),True)
+      Cache_Save(pXDoc,"MicrosoftDI_JSON",JSON)
+   End If
+   Set JS= JSON_Parse(JSON)
+   MicrosoftDI_AddWords(pXDoc, JS, 0)
 End Sub
 
-Public Function MicrosoftOCR_REST(ImageFileName As String, EndPoint As String, Key As String) As String
-   'Call Microsoft Azure Computer Vision OCR API 3.2
-   'https://westus.dev.cognitive.microsoft.com/docs/services/computer-vision-v3-2/operations/56f91f2e778daf14a499f20d
-   Dim  HTTP As New MSXML2.XMLHTTP60, Image() As Byte
-   'supports JPEG, JPG, PNG, TIFF, BMP, 50x50 up to 4200x4200, max 10 megapixel
-   Open ImageFileName For Binary Access Read As #1
-   ReDim Image (0 To LOF(1)-1)
-   Get #1,, Image
-   Close #1
-   HTTP.Open("POST", EndPoint & "/vision/v3.2/read/analyze",varAsync:=False)
-   HTTP.setRequestHeader("Ocp-Apim-Subscription-Key", Key)
-   HTTP.setRequestHeader("Content-Type", "application/octet-stream")
-   HTTP.send(Image)
-   Dim getRequestStatus As MatchCollection, RegexAzureStatus As New RegExp, OperationLocation As String, Delay As Long, I As Long, Status As String
-
+Public Function MicrosoftDI_REST(ImageFileName As String, Model As String, EndPoint As String, Version As String, Key As String,Retries As Long) As String
+   'Call Microsoft Azure Form Recognizer 3.0
+   'https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/how-to-guides/use-sdk-rest-api?view=doc-intel-3.1.0&tabs=windows&pivots=programming-language-rest-api
+   'model = prebuilt-document
+   Dim HTTP As New MSXML2.XMLHTTP60, Image() As Byte, I As Long, Delay As Long, RegexAzureStatus As New RegExp, getRequestStatus As MatchCollection, OperationLocation As String, status As String, URL As String, Extension As String
    RegexAzureStatus.Pattern = """(?:message|status)"":\s*""(.*?)""" 'Get message or status from JSON via regex
+   'supports PDF, JPEG, JPG, PNG, TIFF, BMP, 50x50 up to 4200x4200, max 10 megapixel
+   Open ImageFileName For Binary Access Read As #1
+      ReDim Image (0 To LOF(1)-1)
+      Get #1,, Image
+   Close #1
+   '
+   URL=EndPoint & "/documentintelligence/documentModels/" & Model & ":analyze?_overload=analyzeDocument&api-version=" & Version
+   HTTP.Open("POST", URL ,varAsync:=False)
+   HTTP.setRequestHeader("Ocp-Apim-Subscription-Key", Key)
+   Extension =LCase(Right(ImageFileName,InStrRev(ImageFileName,".")+1))
+   If Extension="jpg" Then Extension = "jpeg"
+   If Extension="tif" Then Extension = "tiff"
+   Select Case Extension
+   Case "png", "jpeg", "pdf", "tiff", "bmp"
+         HTTP.setRequestHeader("Content-Type", "application/" & Extension)
+   Case Else
+         HTTP.setRequestHeader("Content-Type", "application/octet-stream")
+   End Select
+   HTTP.send(Image)
    If HTTP.status<>202 Then
       Set getRequestStatus = RegexAzureStatus.Execute(HTTP.responseText)
       Err.Raise (654,,"Microsoft OCR Error: (" & HTTP.status & ") " & getRequestStatus(0).SubMatches(0))
@@ -68,55 +94,42 @@ Public Function MicrosoftOCR_REST(ImageFileName As String, EndPoint As String, K
    For I= 1 To 100
       Wait Delay
       Set HTTP = New MSXML2.XMLHTTP60
-      HTTP.Open("GET", OperationLocation & "?a=" & CStr(I),varAsync:=False)
+      HTTP.Open("GET", OperationLocation  & "&a=" & CStr(I) ,varAsync:=False) 'pass a random parameter each time so Windows doesn't cache
       HTTP.setRequestHeader("Ocp-Apim-Subscription-Key", Key)
-      'HTTP.setRequestHeader("Cache-Control", "no-cache")
-      'HTTP.setRequestHeader("Cache-Control", "max-age=0")
-      'HTTP.setRequestHeader("cache-control", "private")
       HTTP.send()
       Set getRequestStatus = RegexAzureStatus.Execute(HTTP.responseText)
-      Status=getRequestStatus(0).SubMatches(0)
-      If HTTP.status<>200 Then Err.Raise (655,,"Microsoft OCR Error: (" & HTTP.status & ") " & Status)
-      Select Case Status
+      If HTTP.status<>200 Then Err.Raise (655,,"Microsoft OCR Error: (" & HTTP.status & ") " & HTTP.responseText)
+      status=getRequestStatus(0).SubMatches(0)
+      Select Case status
       Case "succeeded"
          Exit For
       Case "failed"
             Err.Raise (656,,"Microsoft OCR Error: (" & HTTP.status & ") " & HTTP.responseText)
       Case "running", "notStarted"
-         ' Delay=Delay+1 ' wait 1 second longer next time
       End Select
    Next
-   MicrosoftOCR_REST = HTTP.responseText
+   Return HTTP.responseText
 End Function
 
-Public Sub MicrosoftOCR_AddWords(pXDoc As CscXDocument, JS As Object, PageOffset As Long, Optional UseMicrosoftTextLines As Boolean)
-   Dim P As Long, W As Long, Confidences As String, Word As CscXDocWord, Units As String, XRes As Double, YRes As Double, L As Long
-   Dim readResults As Object, ocrWord As Object
-   Set readResults=JS("analyzeResult")("readResults")
-   For P=0 To readResults.Count-1
-      Units=readResults(P)("unit")
+Public Sub MicrosoftDI_AddWords(pXDoc As CscXDocument, JS As Object, PageOffset As Long, Optional UseMicrosoftTextLines As Boolean)
+   Dim p As Long, W As Long, Confidences As String, Word As CscXDocWord, Units As String, XRes As Double, YRes As Double
+   Dim pages As Object, ocrWord As Object
+   Set pages=JS("analyzeResult")("pages")
+   For p=0 To pages.Count-1
+      Units=pages(p)("unit")
       If Units="inch" Then
-         XRes=pXDoc.CDoc.Pages(P).XRes
-         YRes=pXDoc.CDoc.Pages(P).XRes
+         XRes=pXDoc.CDoc.Pages(p).XRes
+         YRes=pXDoc.CDoc.Pages(p).XRes
       End If
-      For L=0 To readResults(P)("lines").Count-1   'format
-         For W=0 To readResults(P)("lines")(L)("words").Count-1   'format
-            Set ocrWord = readResults(P)("lines")(L)("words")(W)
-             Set Word = New CscXDocWord
-             Word.Text=ocrWord("text")
-             Word.PageIndex=P
-             If UseMicrosoftTextLines Then 'Give all the words FAKE coordinates so that KT sees Microsoft's Textlines
-               Word.Left=W*10
-               Word.Width=5
-               Word.Top=L*10
-               Word.Height=5
-             Else
-                BoundingBox2Rectangle(ocrWord("boundingBox"),Word,Units,XRes,YRes) 'Give the words the correct coordinates
-             End If
-             Confidences = Confidences & Format("0.000", ocrWord("confidence")) & ","
-             pXDoc.Pages(P+PageOffset).AddWord(Word)
-         Next 'Word
-      Next 'Line
+      For W=0 To pages(p)("words").Count-1   'format
+         Set ocrWord = pages(p)("words")(W)
+          Set Word = New CscXDocWord
+          Word.Text=ocrWord("text")
+          Word.PageIndex=p
+          BoundingBox2Rectangle(ocrWord("polygon"),Word,Units,XRes,YRes) 'Give the words the correct coordinates
+          Confidences = Confidences & Format("0.000", ocrWord("confidence")) & ","
+          pXDoc.Pages(p+PageOffset).AddWord(Word)
+      Next 'Word
    Next 'Page
    Confidences = Left(Confidences,Len(Confidences)-1) ' trim trailing ,
    'Store all confidences for later use in AZL
@@ -127,23 +140,119 @@ Public Sub MicrosoftOCR_AddWords(pXDoc As CscXDocument, JS As Object, PageOffset
    'restore word coordinates after textlines created
    For W=0 To pXDoc.Words.Count-1
       Set Word=pXDoc.Words(W)
-      Set ocrWord = readResults(Word.PageIndex)("lines")(Word.LineIndex)("words")(Word.IndexInTextLine)
-      Units=readResults(Word.PageIndex)("unit")
+      Set ocrWord = pages(Word.PageIndex)("lines")(Word.LineIndex)("words")(Word.IndexInTextLine)
+      Units=pages(Word.PageIndex)("unit")
       If Units="inch" Then
-         XRes=pXDoc.CDoc.Pages(P).XRes
-         YRes=pXDoc.CDoc.Pages(P).XRes
+         XRes=pXDoc.CDoc.Pages(p).XRes
+         YRes=pXDoc.CDoc.Pages(p).XRes
       End If
       BoundingBox2Rectangle(ocrWord("boundingBox"),Word,Units,XRes,YRes)
    Next
 End Sub
 
+Public Function Min(A,b)
+   'test
+   If A<b Then Min=A Else Min=b
+End Function
+Public Function Max(A,b)
+   If A>b Then Max=A Else Max=b
+End Function
+
+Private Function XDocument_ConvertToMultipageTIFF(ByVal pXDoc As CASCADELib.CscXDocument, Optional ByVal Bitonal As Boolean=True)
+   'Microsoft Document Intelligence API only supports sending a single document.
+   'See "Request Body" at https://westus.dev.cognitive.microsoft.com/docs/services/form-recognizer-api-2023-07-31/operations/AnalyzeDocument
+   'It supports pdf, jpeg, png, tiff, bmp, text, docx, xlsx, pptx, but not multiple images. If we have singlepage images in one document, we need to merge to multipage tiff.
+   Dim NewImg As New CscImage, SourceImg As CscImage, TargetImgPath As String
+   Dim p As Long, FileFormat As Long, ColorFormat As Long
+
+   For p = 0 To pXDoc.CDoc.Pages.Count - 1
+      'Derive new filename from existing name - just replace extension with .tif
+      With pXDoc.CDoc.Pages(p)
+         Set SourceImg=pXDoc.CDoc.Pages(.IndexOfSourceFile).GetImage()
+         If p = 0 Then
+            TargetImgPath = Left(.SourceFileName,InStrRev(.SourceFileName,"\")) & "multipage.tif"
+            If Bitonal Then
+               FileFormat=CscImageFileFormat.CscImgFileFormatTIFFFaxG4
+               ColorFormat=CscImageColorFormat.CscImgColFormatBinary
+            Else
+               Select Case SourceImg.BitsPerSample
+               Case 1
+                  FileFormat=CscImageFileFormat.CscImgFileFormatTIFFFaxG4
+                  ColorFormat=CscImageColorFormat.CscImgColFormatBinary
+               Case 8
+                  FileFormat=CscImageFileFormat.CscImgFileFormatTIFFUncompressed
+                  ColorFormat=CscImageColorFormat.CscImgColFormatGray8
+               Case 16
+                  FileFormat=CscImageFileFormat.CscImgFileFormatTIFFUncompressed
+                  ColorFormat=CscImageColorFormat.CscImgColFormatGray16
+               Case 24
+                  FileFormat=CscImageFileFormat.CscImgFileFormatTIFFUncompressed
+                  ColorFormat=CscImageColorFormat.CscImgColFormatRGB24
+               End Select
+            End If
+           'for the first image, mark the new tiff to remain open for new pages to be added
+           NewImg.StgFilterControl(FileFormat, CscStgCtrlTIFFKeepFileOpen, TargetImgPath, 0, 0)
+         End If
+      End With
+      ' load current page image into the new image that is kept open
+      If Bitonal Then Set SourceImg=SourceImg.BinarizeWithVRS()
+      NewImg.CreateImage(ColorFormat, SourceImg.Width, SourceImg.Height, SourceImg.XResolution, SourceImg.YResolution)
+      NewImg.CopyRect(SourceImg, 0, 0, 0, 0, SourceImg.Width, SourceImg.Height)
+      ' save new image (as KeepFileOpen was set, this will append to the existing file)
+      NewImg.Save(TargetImgPath, FileFormat)
+   Next
+   'close the multi-page TIFF
+   NewImg.StgFilterControl(FileFormat, CscStgCtrlTIFFCloseFile, TargetImgPath, 0, 0)
+   Return TargetImgPath
+End Function
+
+Public Function File_Load(FileName As String) As String
+   Dim L As String
+   Open FileName For Input As #1
+   While Not EOF 1
+      Line Input #1, L
+      File_Load = File_Load & L
+   Wend
+   Close #1
+End Function
+
+Public Function Cache_Load(pXDoc As CscXDocument, RepName As String,Optional Retrieve As Boolean=True) As String
+   'Return the Microsoft DI JSON result from the Xdoc Representation it was stored in.
+   'if retrieve = false then DON'T download it again from Microsoft DI
+   Dim R As Long, Model As String, CacheFileName As String
+   For R=0 To pXDoc.Representations.Count-1
+      If pXDoc.Representations(R).Name=RepName Then Return pXDoc.Representations(R).Words(0).Text
+   Next
+   Model=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceModel").Value
+   CacheFileName=Replace(pXDoc.FileName,".xdc", "." & Model & ".json")
+   If Dir(CacheFileName)<>"" And Retrieve Then Return File_Load(CacheFileName)
+End Function
+
+Public Sub Cache_Save(pXDoc As CscXDocument, RepName As String, Content As String)
+   'Cache a string
+   Dim R As Long, Model As String, CacheFileName As String
+   For R=pXDoc.Representations.Count-1 To 0 Step -1
+      If pXDoc.Representations(R).Name=RepName Then pXDoc.Representations.Remove(R)
+   Next
+   With pXDoc.Representations.Create(RepName).Words
+      Dim Word As New CscXDocWord
+      Word.Text=Content
+      .Append(Word)
+   End With
+   Model=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceModel").Value
+   CacheFileName=Replace(pXDoc.FileName,".xdc", "." & Model & ".json")
+   Open CacheFileName For Output As #1
+   Print #1, vbUTF8BOM & Content
+   Close #1
+End Sub
+
 Public Sub BoundingBox2Rectangle(bb As Object, Rectangle As Object, Units As String, XRes As Long, YRes As Long)
    'Microsoft returns the coordinates of a region as JSON ->   "polygon": [1848,492,1896,494,1897,535,1849,535]
    'We need to convert this to  .left, .width, .top and .height
-   Rectangle.Left=  min(bb(0),bb(6))
-   Rectangle.Width= max(bb(2),bb(4))-Rectangle.Left
-   Rectangle.Top =  min(bb(1),bb(3))
-   Rectangle.Height=max(bb(5),bb(7))-Rectangle.Top
+   Rectangle.Left=  Min(bb(0),bb(6))
+   Rectangle.Width= Max(bb(2),bb(4))-Rectangle.Left
+   Rectangle.Top =  Min(bb(1),bb(3))
+   Rectangle.Height=Max(bb(5),bb(7))-Rectangle.Top
    If Units="inch" Then
       Rectangle.Left=Rectangle.Left*XRes
       Rectangle.Width=Rectangle.Width*XRes
@@ -152,19 +261,11 @@ Public Sub BoundingBox2Rectangle(bb As Object, Rectangle As Object, Units As Str
    End If
 End Sub
 
-Public Function min(A,b)
-   If A<b Then min=A Else min=b
-End Function
-Public Function max(A,b)
-   If A>b Then max=A Else max=b
-End Function
-
-
-
 
 '-------------------------------------------------------------------
 ' VBA JSON Parser https://github.com/KofaxTransformation/KTScripts/blob/master/JSON%20parser%20in%20vb.md
 '-------------------------------------------------------------------
+
 Private T As Long, Tokens As Object
 Function JSON_Parse(JSON As String, Optional Key As String = "$") As Object
    'This is 100% compliant with ECMA-404 JSON Data Interchange Standard at https://www.json.org/json-en.html
