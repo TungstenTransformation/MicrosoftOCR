@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ConfigSetFile xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Name>DefaultTAConfigSet</Name>
+  <Groups>
+    <ConfigSetGroup>
+      <Name>ScriptVariables</Name>
+      <Objects />
+      <Properties>
+        <ConfigSetProperty>
+          <Name>MicrosoftDocumentIntelligenceAPIVersion</Name>
+          <Value>2024-02-29-preview</Value>
+          <Index>0</Index>
+        </ConfigSetProperty>
+        <ConfigSetProperty>
+          <Name>MicrosoftDocumentIntelligenceModel</Name>
+          <Value>prebuilt-tax.us.w2</Value>
+          <Index>0</Index>
+        </ConfigSetProperty>
+        <ConfigSetProperty>
+          <Name>MicrosoftDocumentIntelligenceKey</Name>
+          <Value>42c76fa29ff04432a0e6423ffebbab63</Value>
+          <Index>0</Index>
+        </ConfigSetProperty>
+        <ConfigSetProperty>
+          <Name>MicrosoftDocumentIntelligenceEndpoint</Name>
+          <Value>https://davidwrightdi.cognitiveservices.azure.com</Value>
+          <Index>0</Index>
+        </ConfigSetProperty>
+      </Properties>
+    </ConfigSetGroup>
+    <ConfigSetGroup>
+      <Name>OnlineLearning</Name>
+      <Objects />
+      <Properties>
+        <ConfigSetProperty>
+          <Name>Path</Name>
+          <Value>C:\ProgramData\Kofax Transformation\OnlineLearning\project</Value>
+          <Index>0</Index>
+        </ConfigSetProperty>
+      </Properties>
+    </ConfigSetGroup>
+  </Groups>
+</ConfigSetFile>
