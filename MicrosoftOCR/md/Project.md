@@ -1,15 +1,12 @@
 # Kofax Transformation Auto-documentation
 *created by [KT markdown](https://github.com/KofaxRTransformation/KT_markdown#kt_markdown)*  
-project version= 22.0
+project version= 26.0
 # Class: Project
 [[Fields](#Fields)] [[Locators](#Locators)] [[Formatters](#Formatters)] [[Databases](#Databases)] [[Dictionaries](#Dictionaries)] [[Tables](#Tables)] [[Recognition Profiles](#Recognition-Profiles)] [[Script Variables](#Script-Variables)]  [[Script](Project.vb)]  
 ## Locators
-* **NewLocator** **  
-  
 ## Formatters  
 * **DefaultDateFormatter** *DateFormatter**  
 * **DefaultAmountFormatter** *AmountFormatter**  
-* **USAmountFormatter** *AmountFormatter*  
 ## Databases  
 ## Dictionaries  
 ## Table Settings  
@@ -29,9 +26,16 @@ Global Column 10000 : PO Item Number
 Global Column 15000 : Tax Amount  
 Global Column 15001 : Discount Amount  
 Global Column 16000 : Match Remark  
-Table Model: TableModel  
+Global Column 20001 : State  
+Global Column 20002 : StateWagesTipsEtc  
+Global Column 20003 : StateIncomeTax  
+Global Column 20004 : GlobalColumn  
+Global Column 20005 : LocalWagesTipsEtc  
+Global Column 20006 : LocalIncomeTax  
+Table Model: StateTaxInfos  
+Table Model: LocalTaxInfos  
 ## Recognition Profiles  
-page recognition profile : OmniPage  
+page recognition profile : Microsoft DI*  
 zonal recognition profile : OP_HandAlphanum*  
 zonal recognition profile : OP_HandNum  
 zonal recognition profile : OP_MachineAlphanum  
@@ -40,10 +44,10 @@ zonal recognition profile : OMR_Auto_Single*
 zonal recognition profile : OMR_Auto_Multi  
 zonal recognition profile : OMR_Manual  
 page recognition profile : Mixed Print  
-page recognition profile : Microsoft OCR*  
   
 ## Script Variables  
-* **MicrosoftComputerVisionKey** : *****  
-* **MicrosoftComputerVisionEndpoint** : https://computervisiondavidwright.cognitiveservices.azure.com/  
-* **MicrosoftFormRecognizerModel** : prebuilt-document  
+* **MicrosoftDocumentIntelligenceAPIVersion** : 2024-02-29-preview  
+* **MicrosoftDocumentIntelligenceModel** : prebuilt-tax.us.W-2  
+* **MicrosoftDocumentIntelligenceKey** : *****  
+* **MicrosoftDocumentIntelligenceEndpoint** : https://computervisiondavidwright.cognitiveservices.azure.com  
   
