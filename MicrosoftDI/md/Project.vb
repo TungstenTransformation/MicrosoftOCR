@@ -12,6 +12,15 @@ Private Sub Document_BeforeClassifyXDoc(ByVal pXDoc As CASCADELib.CscXDocument, 
    If DefaultPageProfileName="Microsoft DI" Then MicrosoftDI(pXDoc)
 End Sub
 
+Private Sub Document_AfterClassifyXDoc(ByVal pXDoc As CASCADELib.CscXDocument)
+   Dim Model As String, JSONs As String, JSON As Object, className As String, confidence As Double
+   JSONs=Cache_Load(pXDoc,"MicrosoftDI_JSON",False) 'Get the Microsoft DI response JSON if it is there.
+   Set JSON=JSON_Parse(JSONs)
+   className=JSON("analyzeResult")("documents")(0)("docType")
+   confidence=JSON("analyzeResult")("documents")(0)("confidence")
+   pXDoc.Reclassify(className,confidence)
+End Sub
+
 Public Sub MicrosoftDI(pXDoc As CscXDocument)
    Dim EndPoint As String, Key As String, RepName As String, StartTime As Long, Cache As String, JSON As String, Model As String, JS As Object, Version As String
    Dim TimeStart As Double, TimeEnd As Double, FileName As String
@@ -56,7 +65,7 @@ Public Function MicrosoftDI_REST(ImageFileName As String, Model As String, EndPo
    'https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/how-to-guides/use-sdk-rest-api?view=doc-intel-3.1.0&tabs=windows&pivots=programming-language-rest-api
    'model = prebuilt-document
    Dim HTTP As New MSXML2.XMLHTTP60, Image() As Byte, I As Long, Delay As Long, RegexAzureStatus As New RegExp, getRequestStatus As MatchCollection, OperationLocation As String, status As String, URL As String, Extension As String
-   RegexAzureStatus.Pattern = """status"":""(.*?)"""
+   RegexAzureStatus.Pattern = """(?:message|status)"":\s*""(.*?)""" 'Get message or status from JSON via regex
    'supports PDF, JPEG, JPG, PNG, TIFF, BMP, 50x50 up to 4200x4200, max 10 megapixel
    Open ImageFileName For Binary Access Read As #1
       ReDim Image (0 To LOF(1)-1)
@@ -102,66 +111,42 @@ Public Function MicrosoftDI_REST(ImageFileName As String, Model As String, EndPo
    Return HTTP.responseText
 End Function
 
-Public Sub MicrosoftDI_AddWords(pXDoc As CscXDocument, JS As Object, PageOffset As Long)
-   Dim P As Long, W As Long, Key As String, Confidences As String, Word As CscXDocWord, Units As String, XRes As Double, YRes As Double
-   For P=0 To JS("js.analyzeResult.pages._count")-1
-      Units=JS("JS.analyzeResult.Pages(" & CStr(P) & ").unit")
+Public Sub MicrosoftDI_AddWords(pXDoc As CscXDocument, JS As Object, PageOffset As Long, Optional UseMicrosoftTextLines As Boolean)
+   Dim p As Long, W As Long, Confidences As String, Word As CscXDocWord, Units As String, XRes As Double, YRes As Double
+   Dim pages As Object, ocrWord As Object
+   Set pages=JS("analyzeResult")("pages")
+   For p=0 To pages.Count-1
+      Units=pages(p)("unit")
       If Units="inch" Then
-         XRes=pXDoc.CDoc.Pages(P).XRes
-         YRes=pXDoc.CDoc.Pages(P).XRes
+         XRes=pXDoc.CDoc.Pages(p).XRes
+         YRes=pXDoc.CDoc.Pages(p).XRes
       End If
-      For W=0 To JS("js.analyzeResult.pages(" & P & ").words._count")-1   'format
-         Key="js.analyzeResult.pages(" & P & ").words(" & W & ")"
-         Set Word = New CscXDocWord
-         Word.Text=JSON_Unescape(JS(Key & ".content"))
-         Word.PageIndex=P
-         JSON_Polygon2Rectangle(JS,Key,Word,Units,XRes,YRes)
-         Confidences = Confidences & JS(Key & ".confidence") & ","
-         pXDoc.Pages(P+PageOffset).AddWord(Word)
-      Next
-   Next
+      For W=0 To pages(p)("words").Count-1   'format
+         Set ocrWord = pages(p)("words")(W)
+          Set Word = New CscXDocWord
+          Word.Text=ocrWord("text")
+          Word.PageIndex=p
+          BoundingBox2Rectangle(ocrWord("polygon"),Word,Units,XRes,YRes) 'Give the words the correct coordinates
+          Confidences = Confidences & Format("0.000", ocrWord("confidence")) & ","
+          pXDoc.Pages(p+PageOffset).AddWord(Word)
+      Next 'Word
+   Next 'Page
    Confidences = Left(Confidences,Len(Confidences)-1) ' trim trailing ,
    'Store all confidences for later use in AZL
    If pXDoc.XValues.ItemExists("MicrosoftOCR_WordConfidences") Then pXDoc.XValues.Delete("MicrosoftOCR_WordConfidences")
    pXDoc.XValues.Add("MicrosoftOCR_WordConfidences",Confidences,True)
    pXDoc.Representations(0).AnalyzeLines 'Redo Text Line Analysis in Kofax Transformation
-End Sub
-
-Public Sub MicrosoftDI_AddTables(pXDoc As CscXDocument, JS As Object, PageOffset As Long)
-
-End Sub
-
-Public Sub MicrosoftDI_AddTable(pXDoc As CscXDocument, JS As Object, Table As CscXDocTable, t As Long)
-   Dim Row As CscXDocTableRow, R As Long, C As Long, CellIndex As Long, Cell As CscXDocTableCell, W As Long, Words As CscXDocWords, P As Long, Key As String, BR As Long, BRKey As String
-   Dim rowCount As Long, columnCount As Long, Units As String, XRes As Double, YRes As Double
-   Table.Rows.Clear
-   rowCount =CLng(JS("js.analyzeResult.tables(" & t & ").rowCount"))
-   While Table.Rows.Count<rowCount
-      Table.Rows.Append
-   Wend
-   columnCount = CLng(JS("js.analyzeResult.tables(" & t & ").columnCount"))
-   For CellIndex =0 To rowCount*columnCount-1
-      Key="js.analyzeResult.tables(" & t & ").cells(" & CellIndex & ")"
-      R=CLng(JS(Key & ".rowIndex"))
-      C=CLng(JS(Key & ".columnIndex"))
-      If C<Table.Columns.Count Then
-         Set Cell=Table.Rows(R).Cells(C)
-         'Cell.Text=JSON_Unescape(JS(Key & ".content"))
-         For BR = 0 To CLng(JS(Key & ".boundingRegions._count"))-1
-            BRKey = Key & ".boundingRegions(" & BR & ")"
-            P =CLng(JS(BRKey & ".pageNumber"))-1
-            Units=JS("JS.analyzeResult.Pages(" & CStr(P+1) & ").unit")
-            If Units="inch" Then
-               XRes=pXDoc.CDoc.Pages(P).XRes
-               YRes=pXDoc.CDoc.Pages(P).XRes
-            End If
-            JSON_Polygon2Rectangle(JS,BRKey,Cell, Units, XRes, YRes)
-            Set Words = pXDoc.GetWordsInRect(P,Cell.Left,Cell.Top, Cell.Width, Cell.Height)
-            For W=0 To Words.Count-1
-               Cell.AddWordData(Words(W))
-            Next
-         Next
+   If Not UseMicrosoftTextLines Then Exit Sub
+   'restore word coordinates after textlines created
+   For W=0 To pXDoc.Words.Count-1
+      Set Word=pXDoc.Words(W)
+      Set ocrWord = pages(Word.PageIndex)("lines")(Word.LineIndex)("words")(Word.IndexInTextLine)
+      Units=pages(Word.PageIndex)("unit")
+      If Units="inch" Then
+         XRes=pXDoc.CDoc.Pages(p).XRes
+         YRes=pXDoc.CDoc.Pages(p).XRes
       End If
+      BoundingBox2Rectangle(ocrWord("boundingBox"),Word,Units,XRes,YRes)
    Next
 End Sub
 
@@ -178,13 +163,13 @@ Private Function XDocument_ConvertToMultipageTIFF(ByVal pXDoc As CASCADELib.CscX
    'See "Request Body" at https://westus.dev.cognitive.microsoft.com/docs/services/form-recognizer-api-2023-07-31/operations/AnalyzeDocument
    'It supports pdf, jpeg, png, tiff, bmp, text, docx, xlsx, pptx, but not multiple images. If we have singlepage images in one document, we need to merge to multipage tiff.
    Dim NewImg As New CscImage, SourceImg As CscImage, TargetImgPath As String
-   Dim P As Long, FileFormat As Long, ColorFormat As Long
+   Dim p As Long, FileFormat As Long, ColorFormat As Long
 
-   For P = 0 To pXDoc.CDoc.Pages.Count - 1
+   For p = 0 To pXDoc.CDoc.Pages.Count - 1
       'Derive new filename from existing name - just replace extension with .tif
-      With pXDoc.CDoc.Pages(P)
+      With pXDoc.CDoc.Pages(p)
          Set SourceImg=pXDoc.CDoc.Pages(.IndexOfSourceFile).GetImage()
-         If P = 0 Then
+         If p = 0 Then
             TargetImgPath = Left(.SourceFileName,InStrRev(.SourceFileName,"\")) & "multipage.tif"
             If Bitonal Then
                FileFormat=CscImageFileFormat.CscImgFileFormatTIFFFaxG4
@@ -231,14 +216,16 @@ Public Function File_Load(FileName As String) As String
    Close #1
 End Function
 
-Public Function Cache_Load(pXDoc As CscXDocument, RepName As String) As String
+Public Function Cache_Load(pXDoc As CscXDocument, RepName As String,Optional Retrieve As Boolean=True) As String
+   'Return the Microsoft DI JSON result from the Xdoc Representation it was stored in.
+   'if retrieve = false then DON'T download it again from Microsoft DI
    Dim R As Long, Model As String, CacheFileName As String
    For R=0 To pXDoc.Representations.Count-1
-      If pXDoc.Representations(R).Name=RepName Then Return pXDoc.Representations(R).Text
+      If pXDoc.Representations(R).Name=RepName Then Return pXDoc.Representations(R).Words(0).Text
    Next
    Model=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceModel").Value
    CacheFileName=Replace(pXDoc.FileName,".xdc", "." & Model & ".json")
-   If Dir(CacheFileName)<>"" Then Return File_Load(CacheFileName)
+   If Dir(CacheFileName)<>"" And Retrieve Then Return File_Load(CacheFileName)
 End Function
 
 Public Sub Cache_Save(pXDoc As CscXDocument, RepName As String, Content As String)
@@ -259,108 +246,13 @@ Public Sub Cache_Save(pXDoc As CscXDocument, RepName As String, Content As Strin
    Close #1
 End Sub
 
-'-------------------------------------------------------------------
-' VBA JSON Parser https://github.com/KofaxTransformation/KTScripts/blob/master/JSON%20parser%20in%20vb.md
-'-------------------------------------------------------------------
-Private t As Long, tokens() As String, dic As Object
-Function JSON_Parse(JSON$, Optional Key$ = "js") As Object
-    t = 1
-    tokens = JSON_Tokenize(JSON)
-    Set dic = CreateObject("Scripting.Dictionary")
-    If tokens(t) = "{" Then JSON_ParseObj(Key) Else JSON_ParseArr(Key)
-    Return dic
-End Function
-Function JSON_ParseObj(Key$)
-    Do
-      t = t + 1
-     Select Case tokens(t)
-         Case "]"
-         Case "[":  JSON_ParseArr(Key)
-         Case "{"
-                    If tokens(t + 1) = "}" Then
-                        T = T + 1
-                        dic.Add(Key, "null")
-                    Else
-                        JSON_ParseObj(Key)
-                    End If
-
-         Case "}":  Key = JSON_ParentPath(Key): Exit Do
-         Case ":":  Key = Key & "." & tokens(T - 1) 'previous token was a key - remember it
-         Case ",":  Key = JSON_ParentPath(Key)
-         Case Else 'we are in a string. if next is not ":" then we are value - so add to dict!
-            If tokens(T + 1) <> ":" Then dic.Add(Key, tokens(T))
-     End Select
-    Loop
-End Function
-Function JSON_ParseArr(Key$)
-   Dim A As Long
-   Do
-      T = T + 1
-      Select Case tokens(T)
-         Case "}"
-         Case "{":  JSON_ParseObj(Key & JSON_ArrayID(A))
-         Case "[":  JSON_ParseArr(Key)
-         Case "]":  Exit Do
-         Case ":":  Key = Key & JSON_ArrayID(A)
-         Case ",":  A = A + 1
-         Case Else: dic.Add(Key & JSON_ArrayID(A), tokens(T))
-      End Select
-   Loop
-   dic.Add(Key & "._count",A+1) 'store array length in dictionary
-End Function
-
-Function JSON_Tokenize(S As String) 'completely split the JSON string fast into an array of tokens for the parsers
-   Dim C As Long, m As Object, n As Object, tokens() As String
-   Const Pattern = """(([^""\\]|\\.)*)""|[+\-]?(?:0|[1-9]\d*)(?:\.\d*)?(?:[eE][+\-]?\d+)?|\w+|[^\s""']+?"
-   With CreateObject("vbscript.regexp")
-      .Global = True
-      .Multiline = False
-      .IgnoreCase = True
-      .Pattern = Pattern
-      Set m = .Execute(S)
-      ReDim tokens(1 To m.Count)
-      For Each n In m
-        C = C + 1
-        tokens(C) = n.Value
-        If True Then ' bGroup1Bias=?? when is this needed
-           If Len(n.SubMatches(0)) Or n.Value = """""" Then
-              tokens(C) = n.SubMatches(0)
-           End If
-        End If
-      Next
-  End With
-  Return tokens
-End Function
-
-Function JSON_ArrayID(e) As String
-    Return "(" & e & ")"
-End Function
-
-Function JSON_ParentPath(Key As String) As String 'go to the parent key
-    If InStr(Key, ".") Then Return Left(Key, InStrRev(Key, ".") - 1)
-    'else?
-End Function
-
-Public Function JSON_Unescape(A As String) As String
-   'https://www.json.org/json-en.html
-   A=Replace(A,"\""","""") 'double quote
-   A=Replace(A,"\\","\") 'backslash
-   A=Replace(A,"\/","/") 'forward slash
-   A=Replace(A,"\b","") 'backspace
-   A=Replace(A,"\f","") 'form feed
-   A=Replace(A,"\n","") 'new line
-   A=Replace(A,"\r","") 'carraige return
-   A=Replace(A,"\t","") 'tab
-   Return A
-End Function
-
-Public Sub JSON_Polygon2Rectangle(JS As Object, Key As String, Rectangle As Object, Units As String, XRes As Long, YRes As Long)
+Public Sub BoundingBox2Rectangle(bb As Object, Rectangle As Object, Units As String, XRes As Long, YRes As Long)
    'Microsoft returns the coordinates of a region as JSON ->   "polygon": [1848,492,1896,494,1897,535,1849,535]
    'We need to convert this to  .left, .width, .top and .height
-   Rectangle.Left=  Min(CDouble(JS(Key & ".polygon(0)")),CDouble(JS(Key & ".polygon(6)")))
-   Rectangle.Width= Max(CDouble(JS(Key & ".polygon(2)")),CDouble(JS(Key & ".polygon(4)")))-Rectangle.Left
-   Rectangle.Top =  Min(CDouble(JS(Key & ".polygon(1)")),CDouble(JS(Key & ".polygon(3)")))
-   Rectangle.Height=Max(CDouble(JS(Key & ".polygon(5)")),CDouble(JS(Key & ".polygon(7)")))-Rectangle.Top
+   Rectangle.Left=  Min(bb(0),bb(6))
+   Rectangle.Width= Max(bb(2),bb(4))-Rectangle.Left
+   Rectangle.Top =  Min(bb(1),bb(3))
+   Rectangle.Height=Max(bb(5),bb(7))-Rectangle.Top
    If Units="inch" Then
       Rectangle.Left=Rectangle.Left*XRes
       Rectangle.Width=Rectangle.Width*XRes
@@ -369,13 +261,96 @@ Public Sub JSON_Polygon2Rectangle(JS As Object, Key As String, Rectangle As Obje
    End If
 End Sub
 
-Function CDouble(t As String) As Double
-   'Convert a string to a double amount safely using the default amount formatter, where you control the decimal separator.
-   'Make sure your amount formatter your choose has "." as the decimal symbol as Microsoft OCR returns coordinates in this format: "137.0"
-   'CLng and CDbl functions use local regional settings
-   Dim F As New CscXDocField, AF As ICscFieldFormatter
-   F.Text=t
-   Set AF=Project.FieldFormatters.ItemByName("DefaultAmountFormatter")
-   AF.FormatField(F)
-   Return F.DoubleValue
+
+'-------------------------------------------------------------------
+' VBA JSON Parser https://github.com/KofaxTransformation/KTScripts/blob/master/JSON%20parser%20in%20vb.md
+'-------------------------------------------------------------------
+
+Private T As Long, Tokens As Object
+Function JSON_Parse(JSON As String, Optional Key As String = "$") As Object
+   'This is 100% compliant with ECMA-404 JSON Data Interchange Standard at https://www.json.org/json-en.html
+   'the regex pattern finds strings including characters escaped with \ OR numbers OR true/false/null OR \\{}:,[]
+   'tested at https://regex101.com/r/YkiVdc/1
+   'This script will crash on invalid JSON
+   With CreateObject("vbscript.regexp")
+      .Global=True
+      .Pattern = """(?:[^""\\]|\\.)*""|-?(?:\d+)(?:\.\d*)?(?:[eE][+\-]?\d+)?|(?:true|false|null)|[\[\]{}:,]"
+      Set tokens=.Execute(JSON)
+   End With
+   T=0
+   Select Case Tokens(0)
+      Case "{"  : Return JSON_ParseObject()
+      Case "["  : Return JSON_ParseArray()
+      Case Else : Return JSON_Value(tokens(0))  'Yes a JSON may contain just 1 value
+   End Select
+End Function
+
+Function JSON_ParseObject() As Object
+   Dim Obj As Object, n As String 'Objects contained named objects, arrays or values
+   Set Obj = CreateObject("Scripting.Dictionary")
+   If tokens(t+1)="}" Then  T=T+2 : Return Obj ' empty object
+   Do
+      T = t + 1
+      Select Case tokens(t).Value
+         Case "{"  :  Obj.Add(n,JSON_ParseObject())
+         Case "["  :  Obj.Add(n,JSON_ParseArray())
+         Case ":"  :  n = JSON_Value(tokens(t-1))
+         Case ","
+         Case "}"  :  Return Obj
+         Case Else : If tokens(t - 1) = ":" Then Obj.Add(n, JSON_Value(tokens(t)))
+      End Select
+   Loop
+End Function
+
+Function JSON_ParseArray()
+   Dim A As Object 'Declare A as an array of anything - it may contain strings, booleans, numbers, objects and arrays
+   Set A=CreateObject("System.Collections.Sortedlist")
+   If tokens(t+1)="]" Then : T=T+2 : Return A ' empty array
+   Do
+      T = t + 1
+      Select Case tokens(t)
+         Case "{"  : A.Add(A.Count,JSON_ParseObject()) 'it's an object so recurse
+         Case "["  : A.Add(A.Count,JSON_ParseArray()) 'start of an array inside an array
+         Case ","  :
+         Case "]"  : Return A
+         Case Else : A.Add(A.Count,JSON_Value(tokens(t)))
+      End Select
+   Loop
+End Function
+
+Function JSON_Value(Value As String) 'JSON values can be string, number, true, false or null
+   'Strings start with a " in JSON - everything else is true,false, null or a number
+   If Left (Value,1)="""" Then Return JSON_Unescape(Mid(Value,2,Len(Value)-2)) 'strip " from begin and end of string
+   Select Case Value
+      Case "true"  : Return True
+      Case "false" : Return False
+      Case "null"  : Return Nothing
+      Case Else 'it has to be a number
+         Dim Locale As Long, Number As Double
+         Locale=GetLocale() 'preserve locale
+         SetLocale(1033) 'en_us
+         'these are valid JSON numbers: 1 -1 0 -0.1 1111111111 0.1 1.0000 1.0e5 -1e-5 1E5 0e3 0e-3
+         'these are invalid JSON numbers, but CDbl converts them correctly: +1 .6 1.e5 -.5 e6
+         Number=CDbl(Value) 'CDbl() function luckily correctly converts all allowed JSON number formats
+         SetLocale(Locale)
+         Return Number
+   End Select
+End Function
+
+Public Function JSON_Unescape(A As String) As String
+   'https://www.json.org/json-en.html
+   Dim Hex As String
+   A=Replace(A,"\""","""") 'double quote
+   A=Replace(A,"\/","/") 'forward slash
+   A=Replace(A,"\b",vbBack) 'backspace
+   A=Replace(A,"\f",vbLf) 'form feed
+   A=Replace(A,"\n",vbCrLf) 'new line
+   A=Replace(A,"\r",vbCr) 'carraige return
+   A=Replace(A,"\t",vbTab) 'tab
+   A=Replace(A,"\\","\") 'backslash
+   While InStr(A,"\u")  'hex encoded Unicode characters
+      Hex=Mid(A,InStr(A,"\u")+2,4)
+      A=Replace(A,"\u" & Hex, ChrW(Val("&H" & Hex)))
+   Wend
+   Return A
 End Function
