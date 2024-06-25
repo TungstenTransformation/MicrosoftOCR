@@ -79,7 +79,7 @@ Public Function MicrosoftDI_REST(ImageFileName As String, Model As String, EndPo
    If Extension="jpg" Then Extension = "jpeg"
    If Extension="tif" Then Extension = "tiff"
    Select Case Extension
-   Case ""pdf"
+   Case "pdf"
          HTTP.setRequestHeader("Content-Type", "application/" & Extension)
    Case "png", "jpeg", "tiff", "bmp"
          HTTP.setRequestHeader("Content-Type", "image/" & Extension)
