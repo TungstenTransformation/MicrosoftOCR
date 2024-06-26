@@ -267,7 +267,7 @@ End Sub
 '-------------------------------------------------------------------
 ' VBA JSON Parser https://github.com/KofaxTransformation/KTScripts/blob/master/JSON%20parser%20in%20vb.md
 '-------------------------------------------------------------------
-
+'This converts a JSON string into a hierarchy of Dictionary, SortedList, String, Double, True, False and Nothing objects that are easy to navigate and loop through.
 Private T As Long, Tokens As Object
 Function JSON_Parse(JSON As String, Optional Key As String = "$") As Object
    'This is 100% compliant with ECMA-404 JSON Data Interchange Standard at https://www.json.org/json-en.html
