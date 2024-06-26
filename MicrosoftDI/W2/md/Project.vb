@@ -278,8 +278,9 @@ Function JSON_Parse(JSON As String, Optional Key As String = "$") As Object
       'This regex completely splits any JSON into an array of tokens - a token is any of these 6 characters {}[]:, or string/number/true/false/null.
       'The order of sections in the regex ensures that it parses correctly because escaped characters are parsed first.
 
-     '     JSON =       String        OR               Number               OR  true/false/null OR  []{}:,   
+      '   JSON =        String        OR               Number               OR  true/false/null OR  []{}:,   
       .Pattern = """(?:[^""\\]|\\.)*""|-?(?:\d+)(?:\.\d*)?(?:[eE][+\-]?\d+)?|(?:true|false|null)|[\[\]{}:,]"
+      'The ?: means "non-capturing group". This gives then a 1-dimension array of matching subgroups, instead of a 2-dimensional array of groups and subgroups.
       Set tokens=.Execute(JSON)
    End With
    T=0
