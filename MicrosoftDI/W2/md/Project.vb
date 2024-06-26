@@ -271,11 +271,14 @@ End Sub
 Private T As Long, Tokens As Object
 Function JSON_Parse(JSON As String, Optional Key As String = "$") As Object
    'This is 100% compliant with ECMA-404 JSON Data Interchange Standard at https://www.json.org/json-en.html
-   'the regex pattern finds strings including characters escaped with \ OR numbers OR true/false/null OR \\{}:,[]
    'tested at https://regex101.com/r/YkiVdc/1
    'This script will crash on invalid JSON
    With CreateObject("vbscript.regexp")
       .Global=True
+      'This regex completely splits any JSON into an array of tokens - a token is any of these 6 characters {}[]:, or string/number/true/false/null.
+      'The order of sections in the regex ensures that it parses correctly because escaped characters are parsed first.
+
+     '     JSON =       String        OR               Number               OR  true/false/null OR  []{}:,   
       .Pattern = """(?:[^""\\]|\\.)*""|-?(?:\d+)(?:\.\d*)?(?:[eE][+\-]?\d+)?|(?:true|false|null)|[\[\]{}:,]"
       Set tokens=.Execute(JSON)
    End With
