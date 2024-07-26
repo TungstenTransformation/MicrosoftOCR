@@ -46,8 +46,8 @@ zonal recognition profile : OMR_Manual
 page recognition profile : Mixed Print  
   
 ## Script Variables  
-* **MicrosoftDocumentIntelligenceAPIVersion** : 2024-02-29-preview  
-* **MicrosoftDocumentIntelligenceModel** : prebuilt-tax.us.W-2  
+* **MicrosoftDocumentIntelligenceEndpoint** : https://davidwrightdi.cognitiveservices.azure.com/  
 * **MicrosoftDocumentIntelligenceKey** : *****  
-* **MicrosoftDocumentIntelligenceEndpoint** : https://computervisiondavidwright.cognitiveservices.azure.com  
+* **MicrosoftDocumentIntelligenceModel** : prebuilt-read  
+* **MicrosoftDocumentIntelligenceAPIVersion** : 2024-02-29-preview  
   

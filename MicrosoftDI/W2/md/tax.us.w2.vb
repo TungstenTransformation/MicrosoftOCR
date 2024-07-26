@@ -18,6 +18,7 @@ Private Sub W2_TaxTable(ByVal pXDoc As CASCADELib.CscXDocument, ByVal LocatorNam
    Table.Rows.Clear 'ignore anything Transformation may have found by accident
    JSONs=Cache_Load(pXDoc,"MicrosoftDI_JSON",False) 'Get the Microsoft DI response JSON if it is there.
    Set JSON=JSON_Parse(JSONs)
+   If JSON("analyzeResult")("documents").Count=0 Then Exit Sub ' Microsoft does not think this is a W2 document
    Set Fields=JSON("analyzeResult")("documents")(0)("fields")
    FieldName=Mid(LocatorName,7)
    If Not Fields.Exists(FieldName) Then Exit Sub ' table is not in JSON
@@ -42,13 +43,14 @@ End Sub
 
 
 Private Sub SL_W2_LocateAlternatives(ByVal pXDoc As CASCADELib.CscXDocument, ByVal pLocator As CASCADELib.CscXDocField)
-   Dim JSONs As String, JSON As Object, Fields As Object, LocDef As CscLocatorDef, FieldName As String, AttributeName As String, S As Long
+   Dim JSONs As String, JSON As Object, Fields As Object, LocDef As CscLocatorDef, FieldName As String, AttributeName As String, S As Long, ClassName As String
    Dim Attributes As Object,Att As Object, Word As CscXDocWord, SubField As CscXDocSubField, A As Long, XRes As Long, YRes As Long, Units As String
    Dim Alt As CscXDocFieldAlternative, Field As Object
    Dim boundingRegions As Object
-   If pXDoc.ExtractionClass="" Then Err.Raise(346,,"Please classify the XDocument before running Locator " & pLocator.Name)
+   ClassName = pXDoc.ExtractionClass
+   If ClassName="" Then ClassName="tax.us.w2"
    JSONs=Cache_Load(pXDoc,"MicrosoftDI_JSON",False) 'Get the Microsoft DI response JSON if it is there.
-   Set LocDef = Project.ClassByName(pXDoc.ExtractionClass).Locators.ItemByName(pLocator.Name)
+   Set LocDef = Project.ClassByName(ClassName).Locators.ItemByName(pLocator.Name)
    'create all subfields in locator
    Set Alt= pLocator.Alternatives.Create
    Alt.Confidence=1
@@ -57,6 +59,7 @@ Private Sub SL_W2_LocateAlternatives(ByVal pXDoc As CASCADELib.CscXDocument, ByV
    Next
    'Read fields from Document Intelligence
    Set JSON=JSON_Parse(JSONs)
+   If JSON("analyzeResult")("documents").Count=0 Then Exit Sub ' Microsoft does not think this is a W2 document
    Set Fields=JSON("analyzeResult")("documents")(0)("fields")
    For Each FieldName In Fields.keys
       Set Field=Fields(FieldName)
