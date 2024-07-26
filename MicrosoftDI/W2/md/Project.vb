@@ -5,14 +5,25 @@ Option Explicit
 ' Project Script
 '#Language "WWB-COM"
 
+'This project only supports Microsoft Document Intelligence v4.0 (preview)
+'It does not support version 3.1
+'https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/how-to-guides/use-sdk-rest-api?view=doc-intel-4.0.0&preserve-view=true&tabs=windows&pivots=programming-language-rest-api
+
+Private Sub Document_BeforeExtract(ByVal pXDoc As CASCADELib.CscXDocument)
+   'If we are in TotalAgility ExtractionGroup Project and there is no OCR then force OCR to happen.
+   Dim bSkip As Boolean
+   If pXDoc.Representations.Count=0 Then Document_BeforeClassifyXDoc(pXDoc, bSkip)
+End Sub
+
 Private Sub Document_BeforeClassifyXDoc(ByVal pXDoc As CASCADELib.CscXDocument, ByRef bSkip As Boolean)
-   'To trigger Microsoft Azure OCR in Kofax Transformation, rename the default page OCR profile to "Microsoft DI"
+   'To trigger Microsoft Azure OCR in Tungsten Transformation, rename the default page OCR profile to "Microsoft DI"
    Dim DefaultPageProfileName As String
    DefaultPageProfileName=Project.RecogProfiles.ItemByID(Project.RecogProfiles.DefaultProfileIdPr).Name
    If DefaultPageProfileName="Microsoft DI" Then MicrosoftDI(pXDoc)
 End Sub
 
 Private Sub Document_AfterClassifyXDoc(ByVal pXDoc As CASCADELib.CscXDocument)
+  'If Microsoft Document Intelligence classified the document, then ignore Transformation Classification and use Microsoft's classification
    Dim Model As String, JSONs As String, JSON As Object, className As String, confidence As Double
    JSONs=Cache_Load(pXDoc,"MicrosoftDI_JSON",False) 'Get the Microsoft DI response JSON if it is there.
    Set JSON=JSON_Parse(JSONs)
@@ -25,17 +36,16 @@ Public Sub MicrosoftDI(pXDoc As CscXDocument)
    Dim EndPoint As String, Key As String, RepName As String, StartTime As Long, Cache As String, JSON As String, Model As String, JS As Object, Version As String
    Dim TimeStart As Double, TimeEnd As Double, FileName As String
    RepName="MicrosoftDI"
-   'RepName="PDFTEXT"   'uncomment this line if you want Advanced Zone Locator to use Text
+   'RepName="PDFTEXT"   'uncomment this line if you want Advanced Zone Locator to use Microsoft Text
    While pXDoc.Representations.Count>0
       If pXDoc.Representations(0).Name=RepName Then Exit Sub 'We already have Microsoft OCR text, no need to call again.
       pXDoc.Representations.Remove(0) ' remove all OCR results from XDocument
    Wend
    EndPoint=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceEndpoint").Value 'The Microsoft Azure Cloud URL
    Key=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceKey").Value   'Key to use Microsoft Cognitive Services
-   Model=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceModel").Value
-   Version=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceAPIVersion").Value
+   Model=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceModel").Value 'https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/choose-model-feature?view=doc-intel-4.0.0
+   Version=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceAPIVersion").Value  ' this project only supports "2024-02-29-preview"
    'JSON=Cache_Load(pXDoc,"MicrosoftDI_JSON")
-   pXDoc.Representations.Create(RepName)
    If JSON="" Then
       If pXDoc.CDoc.SourceFiles.Count=1 Then 'Does the XDoc contain 1 or more image files.
          FileName=pXDoc.CDoc.SourceFiles(0).FileName
@@ -54,10 +64,11 @@ Public Sub MicrosoftDI(pXDoc As CscXDocument)
 
       If pXDoc.XValues.ItemExists("MicrosoftDI_Time") Then pXDoc.XValues.Delete("MicrosoftDI_Time")
       pXDoc.XValues.Add("MicrosoftDI_Time",CStr(Timer-StartTime),True)
-      Cache_Save(pXDoc,"MicrosoftDI_JSON",JSON)
    End If
    Set JS= JSON_Parse(JSON)
+   pXDoc.Representations.Create(RepName)
    MicrosoftDI_AddWords(pXDoc, JS, 0)
+   Cache_Save(pXDoc,"MicrosoftDI_JSON",JSON)
 End Sub
 
 Public Function MicrosoftDI_REST(ImageFileName As String, Model As String, EndPoint As String, Version As String, Key As String,Retries As Long) As String
@@ -75,16 +86,16 @@ Public Function MicrosoftDI_REST(ImageFileName As String, Model As String, EndPo
    URL=EndPoint & "/documentintelligence/documentModels/" & Model & ":analyze?_overload=analyzeDocument&api-version=" & Version
    HTTP.Open("POST", URL ,varAsync:=False)
    HTTP.setRequestHeader("Ocp-Apim-Subscription-Key", Key)
-   Extension =LCase(Right(ImageFileName,InStrRev(ImageFileName,".")+1))
+   Extension =LCase(Mid(ImageFileName,InStrRev(ImageFileName,".")+1))
    If Extension="jpg" Then Extension = "jpeg"
    If Extension="tif" Then Extension = "tiff"
    Select Case Extension
    Case "pdf"
-         HTTP.setRequestHeader("Content-Type", "application/" & Extension)
-   Case "png", "jpeg", "tiff", "bmp"
-         HTTP.setRequestHeader("Content-Type", "image/" & Extension)
-   Case Else
+         HTTP.setRequestHeader("Content-Type", "application/pdf")
+   Case "png", "jpeg", "pdf", "tiff", "bmp"
          HTTP.setRequestHeader("Content-Type", "application/octet-stream")
+   Case Else
+         Err.Raise(658,"Unsupported file type " & Extension)
    End Select
    HTTP.send(Image)
    If HTTP.status<>202 Then
@@ -126,7 +137,7 @@ Public Sub MicrosoftDI_AddWords(pXDoc As CscXDocument, JS As Object, PageOffset 
       For W=0 To pages(p)("words").Count-1   'format
          Set ocrWord = pages(p)("words")(W)
           Set Word = New CscXDocWord
-          Word.Text=ocrWord("text")
+          Word.Text=ocrWord("content")
           Word.PageIndex=p
           BoundingBox2Rectangle(ocrWord("polygon"),Word,Units,XRes,YRes) 'Give the words the correct coordinates
           Confidences = Confidences & Format("0.000", ocrWord("confidence")) & ","
@@ -267,10 +278,12 @@ End Sub
 '-------------------------------------------------------------------
 ' VBA JSON Parser https://github.com/KofaxTransformation/KTScripts/blob/master/JSON%20parser%20in%20vb.md
 '-------------------------------------------------------------------
+
 'This converts a JSON string into a hierarchy of Dictionary, SortedList, String, Double, True, False and Nothing objects that are easy to navigate and loop through.
-Private T As Long, Tokens As Object
+Private T As Long, Tokens As Object ' The JSON is broken into an array of tokens. T is the current index of the parser
 Function JSON_Parse(JSON As String, Optional Key As String = "$") As Object
    'This is 100% compliant with ECMA-404 JSON Data Interchange Standard at https://www.json.org/json-en.html
+   'the regex pattern finds strings including characters escaped with \ OR numbers OR true/false/null OR \\{}:,[]
    'tested at https://regex101.com/r/YkiVdc/1
    'This script will crash on invalid JSON
    With CreateObject("vbscript.regexp")
