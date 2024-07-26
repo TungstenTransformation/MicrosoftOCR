@@ -1,24 +1,26 @@
 # Microsoft Azure Document Intelligence for Kofax Transformation
 
+**NOTE** The latest version 1.0.7 only supports Document Intelligence 4.0 preview.
+
+This documentation is for Microsoft Azure Document Intelligence.  
+Click [here](https://github.com/TungstenTransformation/MicrosoftOCR/tree/Microsoft-Computer-Vision#readme) for documentation for [Microsoft Computer Vision](https://github.com/TungstenTransformation/MicrosoftOCR/tree/Microsoft-Computer-Vision#readme) (for photos and images).  
+This repository supports different Microsoft OCR engines
+* Document Intelligence 3.1 *optimized for documents*.
+* [Azure Computer Vision OCR 3.2](https://github.com/TungstenTransformation/MicrosoftOCR/tree/Computer-Vision-OCR-3.2) *optimized for images and not documents*.
+* **Azure AI Vision OCR for Images 4.0** *coming*
+
 **NOTE** The correct model name for US W-2 tax forms is **prebuilt-tax.us.w2** and not **prebuilt-tax.us.W-2**. The [microsoft website](https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/concept-tax-document?view=doc-intel-4.0.0) is incorrect.  
 
 
-This documentation is for Microsoft Azure Document Intelligence.  
-Click [here](https://github.com/KofaxTransformation/MicrosoftOCR/tree/Microsoft-Computer-Vision#readme) for documentation for [Microsoft Computer Vision](https://github.com/KofaxTransformation/MicrosoftOCR/tree/Microsoft-Computer-Vision#readme) (for photos and images).  
-This repository supports different Microsoft OCR engines
-* Document Intelligence 3.1 *optimized for documents*.
-* [Azure Computer Vision OCR 3.2](https://github.com/KofaxTransformation/MicrosoftOCR/tree/Computer-Vision-OCR-3.2) *optimized for images and not documents*.
-* **Azure AI Vision OCR for Images 4.0** *coming*
-
 [Install Microsoft OCR and DI on premise](/MicrosoftOCR_OnPrem.md).
 ## Downloads
-* [Version 1.0.6](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.6) (5 Sep 2023). Fixed inches, "Value" subfield. Added support for png, jpeg, bmp, multiple images in a single document.
-* [Version 1.0.5](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.5) (29 Aug 2023). [Fixed](https://github.com/KofaxTransformation/MicrosoftOCR/commit/62a36fca545373683e7cd807bb3532779e0661e7) error reading model name. Write Microsoft [processing time](https://github.com/KofaxTransformation/MicrosoftOCR/commit/2a1d43c79cd34010817dcc8f64003387a3cb7391) in milliseconds to first word in XDoc Rep called "MicrosoftDI_ProcessingTime".
-* [Version 1.0.4](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.4) (21 Aug 2023). Supports KeyValue Pairs. Fixed table bugs..
-* [Version 1.0.3](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.3) (18 Aug 2023). Switched to Microsoft Document Intelligence - no longer Computer Vision OCR. Added Caching of JSON from KTA Classify to KTA Extract.
-* [Version 1.0.2](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.2) (5 July 2023). Allow handwritten words to extend just outside of AZL zones.
-* [Version 1.0.1](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.1) (4 July 2023). Supports Advanced Zone Locator.
-* [Version 1.0.0](https://github.com/KofaxTransformation/MicrosoftOCR/releases/tag/1.0.0)  (10 Jan 2023). Initial Release. Full page OCR in cloud or on site.
+* [Version 1.0.6](https://github.com/TungstenTransformation/MicrosoftOCR/releases/tag/1.0.6) (5 Sep 2023). Fixed inches, "Value" subfield. Added support for png, jpeg, bmp, multiple images in a single document.
+* [Version 1.0.5](https://github.com/TungstenTransformation/MicrosoftOCR/releases/tag/1.0.5) (29 Aug 2023). [Fixed](https://github.com/TungstenTransformation/MicrosoftOCR/commit/62a36fca545373683e7cd807bb3532779e0661e7) error reading model name. Write Microsoft [processing time](https://github.com/TungstenTransformation/MicrosoftOCR/commit/2a1d43c79cd34010817dcc8f64003387a3cb7391) in milliseconds to first word in XDoc Rep called "MicrosoftDI_ProcessingTime".
+* [Version 1.0.4](https://github.com/TungstenTransformation/MicrosoftOCR/releases/tag/1.0.4) (21 Aug 2023). Supports KeyValue Pairs. Fixed table bugs..
+* [Version 1.0.3](https://github.com/TungstenTransformation/MicrosoftOCR/releases/tag/1.0.3) (18 Aug 2023). Switched to Microsoft Document Intelligence - no longer Computer Vision OCR. Added Caching of JSON from KTA Classify to KTA Extract.
+* [Version 1.0.2](https://github.com/TungstenTransformation/MicrosoftOCR/releases/tag/1.0.2) (5 July 2023). Allow handwritten words to extend just outside of AZL zones.
+* [Version 1.0.1](https://github.com/TungstenTransformation/MicrosoftOCR/releases/tag/1.0.1) (4 July 2023). Supports Advanced Zone Locator.
+* [Version 1.0.0](https://github.com/TungstenTransformation/MicrosoftOCR/releases/tag/1.0.0)  (10 Jan 2023). Initial Release. Full page OCR in cloud or on site.
 ## Description
 Microsoft offers the following services that you can use to read documents.
 * **Document Intelligence 3.0 read model** Form Recognizer**  
@@ -112,7 +114,7 @@ In Project Builder or Design Studio, pressing F4 performs OCR with the built-in 
 * ignores word-level confidences.
 * Ignores regions, which could be copied into KT paragraphs.
 
-Open an [issue](https://github.com/KofaxTransformation/MicrosoftOCR/issues) if you find a bug or need a feature implemented.
+Open an [issue](https://github.com/TungstenTransformation/MicrosoftOCR/issues) if you find a bug or need a feature implemented.
 
 ## useful links
 * https://learn.microsoft.com/en-us/azure/cognitive-services/computer-vision/quickstarts-sdk/image-analysis-client-library?tabs=visual-studio%2C3-2&pivots=programming-language-rest-api#prerequisites
