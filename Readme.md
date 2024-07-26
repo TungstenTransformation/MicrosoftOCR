@@ -2,10 +2,17 @@
 
 **NOTE** The latest version 1.0.7 only supports Document Intelligence 4.0 preview.
 
+* If you want to include this in your own project simply copy the script [MicrosoftDI/W2/md/Project.vb](MicrosoftDI/W2/md/Project.vb) into the project level class of your project.
+* Make sure you have created the 4 required [Script Variables](MicrosoftDI/W2/md/Project.md#Script-Variables).
+  * Set **MicrosoftDocumentIntelligenceModel**  to **prebuilt-read** for OCR.
+  * Set **MicrosoftDocumentIntelligenceModel**  to **prebuilt-tax.us.w2** for US tax W2 document.
+* Make sure your default OCR profile is called **Microsoft DI**. This will trigger the script to skip Omnipage and call Microsoft.
+* the project file **/MicrosoftDI/W2/project.fpr** can be imported into TotalAgility to either perform OCR or read W2 tax forms.
+
 This documentation is for Microsoft Azure Document Intelligence.  
 Click [here](https://github.com/TungstenTransformation/MicrosoftOCR/tree/Microsoft-Computer-Vision#readme) for documentation for [Microsoft Computer Vision](https://github.com/TungstenTransformation/MicrosoftOCR/tree/Microsoft-Computer-Vision#readme) (for photos and images).  
 This repository supports different Microsoft OCR engines
-* Document Intelligence 3.1 *optimized for documents*.
+* Document Intelligence 4.0 preview *optimized for documents*.
 * [Azure Computer Vision OCR 3.2](https://github.com/TungstenTransformation/MicrosoftOCR/tree/Computer-Vision-OCR-3.2) *optimized for images and not documents*.
 * **Azure AI Vision OCR for Images 4.0** *coming*
 
@@ -14,6 +21,7 @@ This repository supports different Microsoft OCR engines
 
 [Install Microsoft OCR and DI on premise](/MicrosoftOCR_OnPrem.md).
 ## Downloads
+* [Version 1.0.7](https://github.com/TungstenTransformation/MicrosoftOCR/releases/tag/1.0.7) (26 Jul 2024). Supports US tax form W2 in locators. Completely new JSON parser which reads any JSON format and is far easier to integrate into scripts.
 * [Version 1.0.6](https://github.com/TungstenTransformation/MicrosoftOCR/releases/tag/1.0.6) (5 Sep 2023). Fixed inches, "Value" subfield. Added support for png, jpeg, bmp, multiple images in a single document.
 * [Version 1.0.5](https://github.com/TungstenTransformation/MicrosoftOCR/releases/tag/1.0.5) (29 Aug 2023). [Fixed](https://github.com/TungstenTransformation/MicrosoftOCR/commit/62a36fca545373683e7cd807bb3532779e0661e7) error reading model name. Write Microsoft [processing time](https://github.com/TungstenTransformation/MicrosoftOCR/commit/2a1d43c79cd34010817dcc8f64003387a3cb7391) in milliseconds to first word in XDoc Rep called "MicrosoftDI_ProcessingTime".
 * [Version 1.0.4](https://github.com/TungstenTransformation/MicrosoftOCR/releases/tag/1.0.4) (21 Aug 2023). Supports KeyValue Pairs. Fixed table bugs..
