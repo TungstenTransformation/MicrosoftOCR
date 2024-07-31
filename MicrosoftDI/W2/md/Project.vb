@@ -75,50 +75,66 @@ Public Function MicrosoftDI_REST(ImageFileName As String, Model As String, EndPo
    'Call Microsoft Azure Form Recognizer 3.0
    'https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/how-to-guides/use-sdk-rest-api?view=doc-intel-3.1.0&tabs=windows&pivots=programming-language-rest-api
    'model = prebuilt-document
-   Dim HTTP As New MSXML2.XMLHTTP60, Image() As Byte, I As Long, Delay As Long, RegexAzureStatus As New RegExp, getRequestStatus As MatchCollection, OperationLocation As String, status As String, URL As String, Extension As String
+   Dim HTTP As MSXML2.XMLHTTP60, Image() As Byte, I As Long, Delay As Long, RegexAzureStatus As New RegExp, getRequestStatus As MatchCollection, OperationLocation As String, status As String, URL As String, Extension As String
    RegexAzureStatus.Pattern = """(?:message|status)"":\s*""(.*?)""" 'Get message or status from JSON via regex
    'supports PDF, JPEG, JPG, PNG, TIFF, BMP, 50x50 up to 4200x4200, max 10 megapixel
    Open ImageFileName For Binary Access Read As #1
       ReDim Image (0 To LOF(1)-1)
       Get #1,, Image
    Close #1
-   '
    URL=EndPoint & "/documentintelligence/documentModels/" & Model & ":analyze?_overload=analyzeDocument&api-version=" & Version
-   HTTP.Open("POST", URL ,varAsync:=False)
-   HTTP.setRequestHeader("Ocp-Apim-Subscription-Key", Key)
    Extension =LCase(Mid(ImageFileName,InStrRev(ImageFileName,".")+1))
    If Extension="jpg" Then Extension = "jpeg"
    If Extension="tif" Then Extension = "tiff"
    Select Case Extension
    Case "pdf"
-         HTTP.setRequestHeader("Content-Type", "application/pdf")
+         Extension="application/pdf"
    Case "png", "jpeg", "pdf", "tiff", "bmp"
-         HTTP.setRequestHeader("Content-Type", "application/octet-stream")
+         Extension="application/octet-stream"
    Case Else
          Err.Raise(658,"Unsupported file type " & Extension)
    End Select
-   HTTP.send(Image)
-   If HTTP.status<>202 Then
-      Set getRequestStatus = RegexAzureStatus.Execute(HTTP.responseText)
-      Err.Raise (654,,"Microsoft OCR Error: (" & HTTP.status & ") " & getRequestStatus(0).SubMatches(0))
-   End If
-   OperationLocation=HTTP.getResponseHeader("Operation-Location") 'Get the URL To retrive the result
    Delay=1 'Wait 1 second for result (Microsoft recommends calling no more frequently than 1 second)
+   For I = 1 To 100
+      Set HTTP = New MSXML2.XMLHTTP60
+      HTTP.Open("POST", URL ,varAsync:=False)
+      HTTP.setRequestHeader("Ocp-Apim-Subscription-Key", Key)
+      HTTP.setRequestHeader("Content-Type", Extension)
+      HTTP.send(Image)
+      Debug.Print HTTP.status
+      Select Case HTTP.status
+         Case 202 'success
+            Exit For
+         Case 429 'exceeded call rate per second
+            Set getRequestStatus = RegexAzureStatus.Execute(HTTP.responseText)
+            Wait 3 * Delay 'seconds and try again
+         Case Else
+            Set getRequestStatus = RegexAzureStatus.Execute(HTTP.responseText)
+            Err.Raise (654,,"Microsoft OCR Error: (" & HTTP.status & ") " & getRequestStatus(0).SubMatches(0))
+      End Select
+   Next
+   If I>90 Then Err.Raise (657,,"Microsoft OCR Error: (" & HTTP.status & ") " & getRequestStatus(0).SubMatches(0))
+   OperationLocation=HTTP.getResponseHeader("Operation-Location") 'Get the URL To retrive the result
    For I= 1 To 100
       Wait Delay
       Set HTTP = New MSXML2.XMLHTTP60
       HTTP.Open("GET", OperationLocation  & "&a=" & CStr(I) ,varAsync:=False) 'pass a random parameter each time so Windows doesn't cache
       HTTP.setRequestHeader("Ocp-Apim-Subscription-Key", Key)
       HTTP.send()
-      Set getRequestStatus = RegexAzureStatus.Execute(HTTP.responseText)
-      If HTTP.status<>200 Then Err.Raise (655,,"Microsoft OCR Error: (" & HTTP.status & ") " & HTTP.responseText)
+      Set getRequestStatus = RegexAzureStatus.Execute(HTTP.responseText) ' find the status or message in json response.
       status=getRequestStatus(0).SubMatches(0)
       Select Case status
-      Case "succeeded"
-         Exit For
-      Case "failed"
-            Err.Raise (656,,"Microsoft OCR Error: (" & HTTP.status & ") " & HTTP.responseText)
-      Case "running", "notStarted"
+         Case "succeeded" '200
+            Exit For
+         Case "running", "notStarted" 'also 200
+            'do nothing as job not finished
+            Delay=1
+         Case Else 'error
+            If HTTP.status=429 Then 'to many requests at this license level
+               Wait 3 * Delay ' seconds
+            Else
+               Err.Raise (655,,"Microsoft OCR Error: (" & HTTP.status & ") " & HTTP.responseText)
+            End If
       End Select
    Next
    Return HTTP.responseText
