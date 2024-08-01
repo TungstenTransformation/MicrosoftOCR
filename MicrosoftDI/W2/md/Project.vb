@@ -142,23 +142,23 @@ Public Function MicrosoftDI_REST(ImageFileName As String, Model As String, EndPo
 End Function
 
 Public Sub MicrosoftDI_AddWords(pXDoc As CscXDocument, JS As Object, PageOffset As Long, Optional UseMicrosoftTextLines As Boolean)
-   Dim p As Long, W As Long, Confidences As String, Word As CscXDocWord, Units As String, XRes As Double, YRes As Double
+   Dim P As Long, W As Long, Confidences As String, Word As CscXDocWord, Units As String, XRes As Double, YRes As Double
    Dim pages As Object, ocrWord As Object
    Set pages=JS("analyzeResult")("pages")
-   For p=0 To pages.Count-1
-      Units=pages(p)("unit")
+   For P=0 To pages.Count-1
+      Units=pages(P)("unit")
       If Units="inch" Then
-         XRes=pXDoc.CDoc.Pages(p).XRes
-         YRes=pXDoc.CDoc.Pages(p).XRes
+         XRes=pXDoc.CDoc.Pages(P).XRes
+         YRes=pXDoc.CDoc.Pages(P).XRes
       End If
-      For W=0 To pages(p)("words").Count-1   'format
-         Set ocrWord = pages(p)("words")(W)
+      For W=0 To pages(P)("words").Count-1   'format
+         Set ocrWord = pages(P)("words")(W)
           Set Word = New CscXDocWord
           Word.Text=ocrWord("content")
-          Word.PageIndex=p
+          Word.PageIndex=P
           BoundingBox2Rectangle(ocrWord("polygon"),Word,Units,XRes,YRes) 'Give the words the correct coordinates
           Confidences = Confidences & Format("0.000", ocrWord("confidence")) & ","
-          pXDoc.Pages(p+PageOffset).AddWord(Word)
+          pXDoc.Pages(P+PageOffset).AddWord(Word)
       Next 'Word
    Next 'Page
    Confidences = Left(Confidences,Len(Confidences)-1) ' trim trailing ,
@@ -173,8 +173,8 @@ Public Sub MicrosoftDI_AddWords(pXDoc As CscXDocument, JS As Object, PageOffset 
       Set ocrWord = pages(Word.PageIndex)("lines")(Word.LineIndex)("words")(Word.IndexInTextLine)
       Units=pages(Word.PageIndex)("unit")
       If Units="inch" Then
-         XRes=pXDoc.CDoc.Pages(p).XRes
-         YRes=pXDoc.CDoc.Pages(p).XRes
+         XRes=pXDoc.CDoc.Pages(P).XRes
+         YRes=pXDoc.CDoc.Pages(P).XRes
       End If
       BoundingBox2Rectangle(ocrWord("boundingBox"),Word,Units,XRes,YRes)
    Next
@@ -193,31 +193,24 @@ Private Function XDocument_ConvertToMultipageTIFF(ByVal pXDoc As CASCADELib.CscX
    'See "Request Body" at https://westus.dev.cognitive.microsoft.com/docs/services/form-recognizer-api-2023-07-31/operations/AnalyzeDocument
    'It supports pdf, jpeg, png, tiff, bmp, text, docx, xlsx, pptx, but not multiple images. If we have singlepage images in one document, we need to merge to multipage tiff.
    Dim NewImg As New CscImage, SourceImg As CscImage, TargetImgPath As String
-   Dim p As Long, FileFormat As Long, ColorFormat As Long
+   Dim P As Long, FileFormat As Long, ColorFormat As Long
 
-   For p = 0 To pXDoc.CDoc.Pages.Count - 1
+   For P = 0 To pXDoc.CDoc.Pages.Count - 1
       'Derive new filename from existing name - just replace extension with .tif
-      With pXDoc.CDoc.Pages(p)
-         Set SourceImg=pXDoc.CDoc.Pages(.IndexOfSourceFile).GetImage()
-         If p = 0 Then
+      With pXDoc.CDoc.Pages(P)
+         Set SourceImg=.GetImage()
+         If P = 0 Then
             TargetImgPath = Left(.SourceFileName,InStrRev(.SourceFileName,"\")) & "multipage.tif"
-            If Bitonal Then
-               FileFormat=CscImageFileFormat.CscImgFileFormatTIFFFaxG4
+            If Bitonal Then 'always convert to TIFF-G4 bitonal
                ColorFormat=CscImageColorFormat.CscImgColFormatBinary
-            Else
-               Select Case SourceImg.BitsPerSample
-               Case 1
-                  FileFormat=CscImageFileFormat.CscImgFileFormatTIFFFaxG4
-                  ColorFormat=CscImageColorFormat.CscImgColFormatBinary
-               Case 8
-                  FileFormat=CscImageFileFormat.CscImgFileFormatTIFFUncompressed
-                  ColorFormat=CscImageColorFormat.CscImgColFormatGray8
-               Case 16
-                  FileFormat=CscImageFileFormat.CscImgFileFormatTIFFUncompressed
-                  ColorFormat=CscImageColorFormat.CscImgColFormatGray16
-               Case 24
-                  FileFormat=CscImageFileFormat.CscImgFileFormatTIFFUncompressed
-                  ColorFormat=CscImageColorFormat.CscImgColFormatRGB24
+               FileFormat=CscImageFileFormat.CscImgFileFormatTIFFFaxG4
+            Else 'keep source file color depth
+               ColorFormat = Image_GetColorFormat(SourceImg)
+               Select Case ColorFormat
+                  Case CscImgColFormatBinary
+                     FileFormat=CscImageFileFormat.CscImgFileFormatTIFFFaxG4 'use TIFF-G4
+                  Case Else 'gray or color
+                     FileFormat=CscImageFileFormat.CscImgFileFormatTIFFJPG 'TIFF-JPG (TTN2 version)
                End Select
             End If
            'for the first image, mark the new tiff to remain open for new pages to be added
@@ -234,6 +227,22 @@ Private Function XDocument_ConvertToMultipageTIFF(ByVal pXDoc As CASCADELib.CscX
    'close the multi-page TIFF
    NewImg.StgFilterControl(FileFormat, CscStgCtrlTIFFCloseFile, TargetImgPath, 0, 0)
    Return TargetImgPath
+End Function
+
+Private Function Image_GetColorFormat(Image As CscImage) As CscImageColorFormat
+   Select Case Image.BitsPerSample
+      Case 1
+         Return CscImgColFormatBinary
+      Case 4
+         If Image.IsGray Then Return CscImgColFormatGray4
+      Case 8
+         If Image.IsGray Then Return CscImgColFormatGray8
+         If Image.IsColor Then Return CscImgColFormatRGB24
+      Case 16
+         If Image.IsGray Then Return CscImgColFormatGray16
+      Case Else
+         Return CscImgColFormatRGB24
+   End Select
 End Function
 
 Public Function File_Load(FileName As String) As String
@@ -332,14 +341,14 @@ Function JSON_ParseObject() As Object
    Set Obj = CreateObject("Scripting.Dictionary")
    If tokens(T+1)="}" Then  T=T+2 : Return Obj ' empty object
    Do
-      T = t + 1
-      Select Case tokens(t).Value
+      T = T + 1
+      Select Case tokens(T).Value
          Case "{"  :  Obj.Add(n,JSON_ParseObject())
          Case "["  :  Obj.Add(n,JSON_ParseArray())
-         Case ":"  :  n = JSON_Value(tokens(t-1))
+         Case ":"  :  n = JSON_Value(tokens(T-1))
          Case ","
          Case "}"  :  Return Obj
-         Case Else : If tokens(t - 1) = ":" Then Obj.Add(n, JSON_Value(tokens(t)))
+         Case Else : If tokens(T - 1) = ":" Then Obj.Add(n, JSON_Value(tokens(T)))
       End Select
    Loop
 End Function
