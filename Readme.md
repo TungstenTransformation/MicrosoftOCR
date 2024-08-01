@@ -1,6 +1,6 @@
 # Microsoft Azure Document Intelligence for Kofax Transformation
 
-**NOTE** The latest version 1.0.7 only supports Document Intelligence 4.0 preview.
+**NOTE** The latest versions 1.0.7 onwards only support Document Intelligence 4.0 preview.
 
 * If you want to include this in your own project simply copy the script [MicrosoftDI/W2/md/Project.vb](MicrosoftDI/W2/md/Project.vb) into the project level class of your project.
 * Make sure you have created the 4 required [Script Variables](MicrosoftDI/W2/md/Project.md#Script-Variables).
@@ -21,6 +21,7 @@ This repository supports different Microsoft OCR engines
 
 [Install Microsoft OCR and DI on premise](/MicrosoftOCR_OnPrem.md).
 ## Downloads
+* [Version 1.0.8](https://github.com/TungstenTransformation/MicrosoftOCR/releases/tag/1.0.8) (1 Aug 2024) Fixes issues with inches, MIME types, calls/second limits and handling b&w/gray/color images.
 * [Version 1.0.7](https://github.com/TungstenTransformation/MicrosoftOCR/releases/tag/1.0.7) (26 Jul 2024). Supports US tax form W2 in locators. Completely new JSON parser which reads any JSON format and is far easier to integrate into scripts.
 * [Version 1.0.6](https://github.com/TungstenTransformation/MicrosoftOCR/releases/tag/1.0.6) (5 Sep 2023). Fixed inches, "Value" subfield. Added support for png, jpeg, bmp, multiple images in a single document.
 * [Version 1.0.5](https://github.com/TungstenTransformation/MicrosoftOCR/releases/tag/1.0.5) (29 Aug 2023). [Fixed](https://github.com/TungstenTransformation/MicrosoftOCR/commit/62a36fca545373683e7cd807bb3532779e0661e7) error reading model name. Write Microsoft [processing time](https://github.com/TungstenTransformation/MicrosoftOCR/commit/2a1d43c79cd34010817dcc8f64003387a3cb7391) in milliseconds to first word in XDoc Rep called "MicrosoftDI_ProcessingTime".
