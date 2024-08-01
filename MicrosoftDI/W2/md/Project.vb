@@ -45,6 +45,7 @@ Public Sub MicrosoftDI(pXDoc As CscXDocument)
    Key=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceKey").Value   'Key to use Microsoft Cognitive Services
    Model=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceModel").Value 'https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/choose-model-feature?view=doc-intel-4.0.0
    Version=Project.ScriptVariables.ItemByName("MicrosoftDocumentIntelligenceAPIVersion").Value  ' this project only supports "2024-02-29-preview"
+   If Version<>"2024-02-29-preview" Then Err.Raise(650,,"The only supported API version is Document Intelligence 4.0 preview '2024-02-29-preview'. You are trying to use " & Version & ".")
    'JSON=Cache_Load(pXDoc,"MicrosoftDI_JSON")
    If JSON="" Then
       If pXDoc.CDoc.SourceFiles.Count=1 Then 'Does the XDoc contain 1 or more image files.
