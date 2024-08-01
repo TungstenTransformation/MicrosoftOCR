@@ -278,15 +278,21 @@ End Sub
 Public Sub BoundingBox2Rectangle(bb As Object, Rectangle As Object, Units As String, XRes As Long, YRes As Long)
    'Microsoft returns the coordinates of a region as JSON ->   "polygon": [1848,492,1896,494,1897,535,1849,535]
    'We need to convert this to  .left, .width, .top and .height
-   Rectangle.Left=  Min(bb(0),bb(6))
-   Rectangle.Width= Max(bb(2),bb(4))-Rectangle.Left
-   Rectangle.Top =  Min(bb(1),bb(3))
-   Rectangle.Height=Max(bb(5),bb(7))-Rectangle.Top
+   Dim L As Double, W As Double, T As Double, H As Double
+   L= Min(bb(0),bb(6))
+   W= Max(bb(2),bb(4))-L
+   T= Min(bb(1),bb(3))
+   H= Max(bb(5),bb(7))-T
    If Units="inch" Then
-      Rectangle.Left=Rectangle.Left*XRes
-      Rectangle.Width=Rectangle.Width*XRes
-      Rectangle.Top=Rectangle.Top*YRes
-      Rectangle.Height=Rectangle.Height*YRes
+      Rectangle.Left=L*XRes
+      Rectangle.Width=W*XRes
+      Rectangle.Top=T*YRes
+      Rectangle.Height=H*YRes
+   Else
+      Rectangle.Left=L
+      Rectangle.Width=W
+      Rectangle.Top=T
+      Rectangle.Height=H
    End If
 End Sub
 
