@@ -89,9 +89,10 @@ Public Function MicrosoftDI_REST(ImageFileName As String, Model As String, EndPo
    Select Case Extension
    Case "pdf"
          Extension="application/pdf"
-   Case "png", "jpeg", "pdf", "tiff", "bmp"
-         Extension="application/octet-stream"
+   Case "png", "jpeg", "tiff", "bmp"
+         Extension="image/" & Extension
    Case Else
+         'Extension="application/octet-stream"
          Err.Raise(658,"Unsupported file type " & Extension)
    End Select
    Delay=1 'Wait 1 second for result (Microsoft recommends calling no more frequently than 1 second)
@@ -329,7 +330,7 @@ End Function
 Function JSON_ParseObject() As Object
    Dim Obj As Object, n As String 'Objects contained named objects, arrays or values
    Set Obj = CreateObject("Scripting.Dictionary")
-   If tokens(t+1)="}" Then  T=T+2 : Return Obj ' empty object
+   If tokens(T+1)="}" Then  T=T+2 : Return Obj ' empty object
    Do
       T = t + 1
       Select Case tokens(t).Value
