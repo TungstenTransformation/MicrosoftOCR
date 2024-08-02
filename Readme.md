@@ -1,4 +1,4 @@
-# Microsoft Azure Document Intelligence for Kofax Transformation
+# Microsoft Azure Document Intelligence for Tungsten TotalAgility
 
 **NOTE** The latest versions 1.0.7 onwards only support Document Intelligence 4.0 preview.
 
@@ -33,7 +33,7 @@ This repository supports different Microsoft OCR engines
 * [Version 1.0.0](https://github.com/TungstenTransformation/MicrosoftOCR/releases/tag/1.0.0)  (10 Jan 2023). Initial Release. Full page OCR in cloud or on site.
 ## Description
 Microsoft offers the following services that you can use to read documents.
-* **Document Intelligence 3.0 read model** Form Recognizer**  
+* **Document Intelligence 4.0 read model** Form Recognizer  
     *optimized for text-heavy scanned and digital documents**. Asynchronous.
     * supports JPEG/JPG, PNG, BMP, TIFF and **PDF**.
     * PDF & TIFF <2000 pages & < 50MB. *The free version reads only first 2 pages*.
@@ -64,7 +64,7 @@ Microsoft offers the following services that you can use to read documents.
 * On Azure Cloud or [on-premise](https://learn.microsoft.com/en-us/azure/cognitive-services/computer-vision/computer-vision-how-to-install-containers) via Docker Containers.
 * Free tier: 20 calls/minute, 5k calls/month.
 * S1 Tier 10: calls/second @ ~ 80$/1000 calls. See [Pricing]((https://azure.microsoft.com/en-gb/pricing/details/cognitive-services/computer-vision/)) for more.
-* very simple integration into Kofax Transformation and Kofax Total Agility. No dlls, plugins or any other software required. Works also on KTA cloud.
+* very simple integration into Tungsten Transformation and Tungsten Total Agility. No dlls, plugins or any other software required. Works also on TotalAgility cloud.  
 ![image](https://user-images.githubusercontent.com/47416964/227095491-b54f09f7-7b2f-4be2-95a7-0b5383185ee3.png)
 ![image](https://user-images.githubusercontent.com/47416964/227095588-62649b39-4648-4c06-aa37-3f77dcf85600.png)
 
@@ -76,9 +76,9 @@ Microsoft offers the following services that you can use to read documents.
 * Click **Create**.
 * Name your endpoint, select your Region, Pricing Tier and click **Review + Create**.
 * Click on **Click here to manage keys**.
-* You will need to copy either **KEY1** or **KEY2** and the **Endpoint** into Kofax Transformation.
+* You will need to copy either **KEY1** or **KEY2** and the **Endpoint** into Tungsten Transformation.
 
-## Configure Kofax Transformation
+## Configure Tungsten Transformation
 
 * Copy the [script](/MicrosoftDI/md/Project.vb) into the Project Level Class of your KT Project.
 * Rename the Default Page Recognition profile to **Microsoft OCR**. *It doesn't matter what the OCR engine shown is, it will be ignored*.
@@ -108,9 +108,9 @@ Microsoft offers the following services that you can use to read documents.
 
 
 ## How it works
-In KTM and KTA runtime. Kofax Transformation performs OCR on demand, either when Text Classification is required or when a locator needs text.
-This script runs in the event **Document_BeforeClassify**, which occurs before KT ever tries to OCR the document. The script checks if you named a profile "Microsoft OCR". If so, it sends each page of the document to Microsoft and copies the words and coordinates into the XDocument. The XDocument now has an OCR layer called "Microsoft OCR", which will be used by the classifiers and locators - OCR won't be called again with another document.
-In Project Builder or Design Studio, pressing F4 performs OCR with the built-in engines. To force it to use Microsoft OCR, press F5 (Classify) to send the document to Microsoft.
+In Tungsten Transformation and TotalAgility runtime. Tungsten Transformation performs OCR on demand, either when Text Classification is required or when a locator needs text.
+This script runs in the event **Document_BeforeClassify**, which occurs before Transformation ever tries to OCR the document. The script checks if you named a profile "Microsoft OCR". If so, it sends each page of the document to Microsoft and copies the words and coordinates into the XDocument. The XDocument now has an OCR layer called "Microsoft OCR", which will be used by the classifiers and locators - OCR won't be called again with another document.
+In Project Builder or Transformation Designer, pressing F4 performs OCR with the built-in engines. To force it to use Microsoft OCR, press F5 (Classify) to send the document to Microsoft, or select the correct class in the class-true and press F6 (Extract) if you have an Excraction Group only project.
 
 # How to use Microsoft Document Intelligence with Tables
 * Add a table locator to any class, configure your table model.
