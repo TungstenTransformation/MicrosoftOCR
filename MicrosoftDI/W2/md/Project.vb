@@ -313,8 +313,11 @@ End Sub
 '-------------------------------------------------------------------
 
 'This converts a JSON string into a hierarchy of Dictionary, SortedList, String, Double, True, False and Nothing objects that are easy to navigate and loop through.
-Private T As Long, Tokens As Object ' The JSON is broken into an array of tokens. T is the current index of the parser
-Function JSON_Parse(JSON As String, Optional Key As String = "$") As Object
+Function JSON_Parse(JSON As String, Optional Key As String = "$")
+   Dim T As Long, Tokens As VBScript_RegExp_55.MatchCollection ' The JSON is broken into an array of tokens. T is the current index of the parser
+   Dim Stack As Object, J As Object, Name As String, Value As CscXDocField, Locale As Long
+   Set Stack = CreateObject("System.Collections.Sortedlist")
+   Locale=GetLocale() 'preserve locale
    'This is 100% compliant with ECMA-404 JSON Data Interchange Standard at https://www.json.org/json-en.html
    'the regex pattern finds strings including characters escaped with \ OR numbers OR true/false/null OR \\{}:,[]
    'tested at https://regex101.com/r/YkiVdc/1
@@ -323,51 +326,62 @@ Function JSON_Parse(JSON As String, Optional Key As String = "$") As Object
       .Global=True
       'This regex completely splits any JSON into an array of tokens - a token is any of these 6 characters {}[]:, or string/number/true/false/null.
       'The order of sections in the regex ensures that it parses correctly because escaped characters are parsed first.
-
       '   JSON =        String        OR               Number               OR  true/false/null OR  []{}:,
       .Pattern = """(?:[^""\\]|\\.)*""|-?(?:\d+)(?:\.\d*)?(?:[eE][+\-]?\d+)?|(?:true|false|null)|[\[\]{}:,]"
       'The ?: means "non-capturing group". This gives then a 1-dimension array of matching subgroups, instead of a 2-dimensional array of groups and subgroups.
-      Set tokens=.Execute(JSON)
+      Set Tokens=.Execute(JSON)
    End With
-   T=0
-   Select Case Tokens(0)
-      Case "{"  : Return JSON_ParseObject()
-      Case "["  : Return JSON_ParseArray()
-      Case Else : Return JSON_Value(tokens(0))  'Yes a JSON may contain just 1 value
-   End Select
-End Function
-
-Function JSON_ParseObject() As Object
-   Dim Obj As Object, n As String 'Objects contained named objects, arrays or values
-   Set Obj = CreateObject("Scripting.Dictionary")
-   If tokens(T+1)="}" Then  T=T+2 : Return Obj ' empty object
-   Do
-      T = T + 1
-      Select Case tokens(T).Value
-         Case "{"  :  Obj.Add(n,JSON_ParseObject())
-         Case "["  :  Obj.Add(n,JSON_ParseArray())
-         Case ":"  :  n = JSON_Value(tokens(T-1))
+   If Tokens.Count=0 Then Return Nothing ' empty JSON
+   SetLocale(1033) 'en_us for number parsing
+   If Tokens.Count=1 Then
+      Value=JSON_Value(Tokens(0)) ' JSON contains just 1 value
+      SetLocale(Locale) 'restore program locale
+      Return Value
+   End If
+   For T=0 To Tokens.Count-1
+      Select Case Tokens(T)
+         Case "{" 'new object
+            Stack.Add(Stack.Count,New Scripting.Dictionary)
+         Case "[" 'new array
+            Stack.Add(Stack.Count,CreateObject("System.Collections.Sortedlist"))
          Case ","
-         Case "}"  :  Return Obj
-         Case Else : If tokens(T - 1) = ":" Then Obj.Add(n, JSON_Value(tokens(T)))
+            Stack_Pop(Stack) 'add item to object/array
+         Case "}", "]"
+            If Tokens(T-1)<>"{" And Tokens(T-1)<>"[" Then Stack_Pop(Stack) 'add last item to object/array
+         Case ":"
+            'Nothing to do here. The stack will show the "parent" is a value anyway
+         Case Else ' it's a value
+            Set Value=New CscXDocField 'we need to push an object onto the stack, so I picked cscxdocfield since it has a text attribute
+            Value.Text=Tokens(T)
+            Stack.Add(Stack.Count,Value)
       End Select
-   Loop
+   Next
+   SetLocale(Locale)
+   Return Stack(0)
 End Function
 
-Function JSON_ParseArray()
-   Dim A As Object 'Declare A as an array of anything - it may contain strings, booleans, numbers, objects and arrays
-   Set A=CreateObject("System.Collections.Sortedlist")
-   If tokens(t+1)="]" Then : T=T+2 : Return A ' empty array
-   Do
-      T = t + 1
-      Select Case tokens(t)
-         Case "{"  : A.Add(A.Count,JSON_ParseObject()) 'it's an object so recurse
-         Case "["  : A.Add(A.Count,JSON_ParseArray()) 'start of an array inside an array
-         Case ","  :
-         Case "]"  : Return A
-         Case Else : A.Add(A.Count,JSON_Value(tokens(t)))
-      End Select
-   Loop
+Function Stack_Pop(ByRef Stack As Object)
+   'We have completed an object "}" or array "]" or either "," so we need to push the top object/array/NameValue into the parent object/array
+   Dim Current As Object, Previous As Object, Arr As Object, Obj As Object
+   Set Current=Stack(Stack.Count-1)
+   Set Previous =Stack(Stack.Count-2)
+   If TypeOf Previous Is CscXDocField Then ' this a name/value pair to be pushed onto the parent object
+      Set Obj=Stack(Stack.Count-3)
+      If TypeOf Current Is CscXDocField Then ' the value is not an array nor an object.
+         Obj.Add(JSON_Value(Previous.Text),JSON_Value(Current.Text))
+      Else 'push object or array into parent object
+         Obj.Add(JSON_Value(Previous.Text),Current)
+      End If
+      Stack.Removeat(Stack.Count-2) 'remove Name from the stack
+   Else 'this is an object/array/NameValue that needs to be pushed onto the parent array
+      Set Arr=Stack(Stack.Count-2)
+      If TypeOf Current  Is CscXDocField Then ' this value needs to be pushed onto the array
+         Arr.Add(Arr.Count,JSON_Value(Current.Text))
+      Else 'push object or array into parent array
+         Arr.Add(Arr.Count,Current)
+      End If
+   End If
+   Stack.Removeat(Stack.Count-1) 'remove Value from stack
 End Function
 
 Function JSON_Value(Value As String) 'JSON values can be string, number, true, false or null
@@ -377,15 +391,9 @@ Function JSON_Value(Value As String) 'JSON values can be string, number, true, f
       Case "true"  : Return True
       Case "false" : Return False
       Case "null"  : Return Nothing
-      Case Else 'it has to be a number
-         Dim Locale As Long, Number As Double
-         Locale=GetLocale() 'preserve locale
-         SetLocale(1033) 'en_us
-         'these are valid JSON numbers: 1 -1 0 -0.1 1111111111 0.1 1.0000 1.0e5 -1e-5 1E5 0e3 0e-3
+      Case Else 'it has to be a number. These are valid JSON numbers: 1 -1 0 -0.1 1111111111 0.1 1.0000 1.0e5 -1e-5 1E5 0e3 0e-3
          'these are invalid JSON numbers, but CDbl converts them correctly: +1 .6 1.e5 -.5 e6
-         Number=CDbl(Value) 'CDbl() function luckily correctly converts all allowed JSON number formats
-         SetLocale(Locale)
-         Return Number
+         Return CDbl(Value)  'CDbl() function luckily correctly converts all allowed JSON number formats
    End Select
 End Function
 
