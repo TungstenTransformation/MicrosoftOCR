@@ -21,6 +21,7 @@ This repository supports different Microsoft OCR engines
 
 [Install Microsoft OCR and DI on premise](/MicrosoftOCR_OnPrem.md).
 ## Downloads
+* [Version 1.0.9](https://github.com/TungstenTransformation/MicrosoftOCR/releases/tag/1.0.8) (2 Aug 2024) New non-recursive JSON parser that successfully reads complex JSON files of any depth as it no longer relies on the VB6 call stack.
 * [Version 1.0.8](https://github.com/TungstenTransformation/MicrosoftOCR/releases/tag/1.0.8) (1 Aug 2024) Fixes issues with inches, MIME types, calls/second limits and handling b&w/gray/color images.
 * [Version 1.0.7](https://github.com/TungstenTransformation/MicrosoftOCR/releases/tag/1.0.7) (26 Jul 2024). Supports US tax form W2 in locators. Completely new JSON parser which reads any JSON format and is far easier to integrate into scripts.
 * [Version 1.0.6](https://github.com/TungstenTransformation/MicrosoftOCR/releases/tag/1.0.6) (5 Sep 2023). Fixed inches, "Value" subfield. Added support for png, jpeg, bmp, multiple images in a single document.
